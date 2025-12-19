@@ -21,9 +21,11 @@ def log(msg: str):
 def read_excel_safe(path: Path) -> pd.DataFrame:
     log(f"[INFO] Lendo arquivo: {path.name}")
     try:
+        # tentativa padrão (openpyxl / engine automático)
         return pd.read_excel(path)
     except Exception:
         try:
+            # fallback para xls antigo real
             return pd.read_excel(path, engine="xlrd")
         except Exception as e:
             raise ValueError(f"Erro ao ler {path}: {e}")
@@ -93,7 +95,7 @@ def process_modulo1(
         "RE": resumo[col_re],
         "NOME": resumo[col_nome],
         "Valor OP": resumo[col_valpag],
-        "Valor Benefício": 0,  # ✅ agora numérico
+        "Valor Benefício": "",
         "Diferença": "",
         "Resultado": "",
         "Alerta": "",
@@ -171,11 +173,12 @@ def process_modulo1(
         final_df.at[re, "Alerta"] = "nada encontrado"
 
     # -------------------------------------------------------------------------
-    # ETAPA 3 – DIFERENÇA
+    # ETAPA 3 – Diferença
     # -------------------------------------------------------------------------
-    mask = final_df["Valor Benefício"] != 0
+    mask = final_df["Valor Benefício"] != ""
     final_df.loc[mask, "Diferença"] = (
-        final_df.loc[mask, "Valor OP"] - final_df.loc[mask, "Valor Benefício"]
+        final_df.loc[mask, "Valor OP"]
+        - pd.to_numeric(final_df.loc[mask, "Valor Benefício"], errors="coerce")
     )
 
     # -------------------------------------------------------------------------
@@ -198,11 +201,7 @@ def process_modulo1(
     aviso_fim = _find_column(aviso_df, ["data_fim", "dtfim", "fim"])
 
     aviso_df[aviso_re] = aviso_df[aviso_re].astype(str).str.strip()
-    aviso_df[aviso_fim] = pd.to_datetime(
-        aviso_df[aviso_fim],
-        format="%d/%m/%Y",
-        errors="coerce"
-    )
+    aviso_df[aviso_fim] = pd.to_datetime(aviso_df[aviso_fim], errors="coerce")
 
     ultimos = aviso_df.groupby(aviso_re)[aviso_fim].max()
 
@@ -231,18 +230,23 @@ def process_modulo1(
             final_df.at[re, "Escala"] = linha.get(sit_escala, "")
 
     # -------------------------------------------------------------------------
-    # ETAPA 7 – FREQUÊNCIA
+    # ETAPA 7 – FREQUÊNCIA (fp)
     # -------------------------------------------------------------------------
     fp_df = read_excel_safe(fp_path)
 
     fp_re = _find_column(fp_df, ["re", "codvigil", "RE"])
+    fp_sit = _find_column(fp_df, ["situacao", "situação", "SITUACAO"])
+    fp_sithoje = _find_column(fp_df, ["sithoje", "sit_hoje", "SITHOJE"])
     fp_data = _find_column(fp_df, ["data", "DATA"])
 
     fp_df[fp_re] = fp_df[fp_re].astype(str).str.strip()
-    fp_df[fp_data] = pd.to_datetime(fp_df[fp_data], dayfirst=True, errors="coerce")
+    fp_df[fp_sit] = fp_df[fp_sit].astype(str).str.upper().str.strip()
+    fp_df[fp_sithoje] = fp_df[fp_sithoje].astype(str).str.upper().str.strip()
+
+    raw_dates = fp_df[fp_data]
+    fp_df[fp_data] = pd.to_datetime(raw_dates, dayfirst=True, errors="coerce")
 
     inicio, fim = _previous_month_range()
-
     periodo_df = fp_df[
         (fp_df[fp_data] >= pd.Timestamp(inicio)) &
         (fp_df[fp_data] <= pd.Timestamp(fim))
@@ -251,11 +255,14 @@ def process_modulo1(
     grouped_fp = periodo_df.groupby(fp_re)
 
     for re in final_df.index:
-        if str(re) in grouped_fp.groups:
-            final_df.at[re, "Qtd. Dias Trabalhados"] = len(grouped_fp.get_group(str(re)))
+        if str(re) not in grouped_fp.groups:
+            continue
+
+        g = grouped_fp.get_group(str(re))
+        final_df.at[re, "Qtd. Dias Trabalhados"] = len(g)
 
     # -------------------------------------------------------------------------
-    # SALVAR
+    # SALVAR ARQUIVO FINAL
     # -------------------------------------------------------------------------
     final_df.reset_index(inplace=True)
 
@@ -277,6 +284,6 @@ def process_modulo1(
     wb.save(out_path)
 
     log(f"[INFO] Arquivo final salvo em: {out_path}")
-    log("[INFO] PROCESSO FINALIZADO COM SUCESSO!]")
+    log("[INFO] PROCESSO FINALIZADO COM SUCESSO!")
 
     return out_path, PROCESS_LOGS
