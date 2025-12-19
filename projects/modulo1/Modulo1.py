@@ -1,6 +1,5 @@
-import logging
 from pathlib import Path
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta
 from typing import Optional, List
 
 import pandas as pd
@@ -16,7 +15,7 @@ def log(msg: str):
 
 
 # =============================================================================
-# LEITURA ROBUSTA DE EXCEL (XLS / XLSX / EXTENSÃO ERRADA)
+# LEITURA ROBUSTA DE EXCEL
 # =============================================================================
 def read_excel_safe(path: Path) -> pd.DataFrame:
     log(f"[INFO] Lendo arquivo: {path.name}")
@@ -93,9 +92,8 @@ def process_modulo1(
         "RE": resumo[col_re],
         "NOME": resumo[col_nome],
         "Valor OP": resumo[col_valpag],
-        "Valor Benefício": 0,  # ✅ agora numérico
-        "Diferença": "",
-        "Resultado": "",
+        "Valor Benefício": 0,
+        "Diferença": 0,
         "Alerta": "",
         "DEMITIDO?": "ATIVO",
         "AVISO PRÉVIO?": "ATIVO",
@@ -115,7 +113,7 @@ def process_modulo1(
     final_df.set_index("RE", inplace=True)
 
     # -------------------------------------------------------------------------
-    # ETAPA 2 – hk_avulso
+    # ETAPA 2 – HK AVULSO
     # -------------------------------------------------------------------------
     hk_df = read_excel_safe(hk_avulso_path)
 
@@ -141,8 +139,6 @@ def process_modulo1(
 
         if soma_hoje == valor_op and soma_hoje != 0:
             final_df.at[re, "Valor Benefício"] = soma_hoje
-            final_df.at[re, "Diferença"] = 0
-            final_df.at[re, "Resultado"] = "OK"
             final_df.at[re, "Alerta"] = ""
             continue
 
@@ -150,32 +146,21 @@ def process_modulo1(
         dados_validos["dia"] = dados_validos[hk_dt].dt.date
         soma_por_dia = dados_validos.groupby("dia")[hk_val].sum()
 
-        iguais = soma_por_dia[soma_por_dia == valor_op]
-        if not iguais.empty:
-            dia = iguais.index[0].strftime("%d/%m/%Y")
-            final_df.at[re, "Resultado"] = f"o valor foi lançado no dia {dia}"
-            final_df.at[re, "Diferença"] = 0
-            continue
-
-        if len(soma_por_dia) == 1:
-            soma_unica = soma_por_dia.iloc[0]
-            dia = soma_por_dia.index[0].strftime("%d/%m/%Y")
-            final_df.at[re, "Alerta"] = f"o valor {soma_unica:.2f} foi localizado na data {dia}"
-            continue
-
-        if len(soma_por_dia) > 1:
+        if not soma_por_dia.empty:
             soma_total = soma_por_dia.sum()
-            final_df.at[re, "Alerta"] = f"o valor {soma_total:.2f} foi localizado em diversas datas"
-            continue
-
-        final_df.at[re, "Alerta"] = "nada encontrado"
+            final_df.at[re, "Valor Benefício"] = soma_total
+            final_df.at[re, "Alerta"] = "valor localizado em datas diversas"
 
     # -------------------------------------------------------------------------
     # ETAPA 3 – DIFERENÇA
     # -------------------------------------------------------------------------
-    mask = final_df["Valor Benefício"] != 0
-    final_df.loc[mask, "Diferença"] = (
-        final_df.loc[mask, "Valor OP"] - final_df.loc[mask, "Valor Benefício"]
+    mask_zero = final_df["Valor Benefício"] == 0
+    mask_maior = final_df["Valor Benefício"] > 0
+
+    final_df.loc[mask_zero, "Diferença"] = final_df.loc[mask_zero, "Valor OP"]
+    final_df.loc[mask_maior, "Diferença"] = (
+        final_df.loc[mask_maior, "Valor OP"]
+        - final_df.loc[mask_maior, "Valor Benefício"]
     )
 
     # -------------------------------------------------------------------------
@@ -248,14 +233,12 @@ def process_modulo1(
         (fp_df[fp_data] <= pd.Timestamp(fim))
     ]
 
-    grouped_fp = periodo_df.groupby(fp_re)
-
-    for re in final_df.index:
-        if str(re) in grouped_fp.groups:
-            final_df.at[re, "Qtd. Dias Trabalhados"] = len(grouped_fp.get_group(str(re)))
+    for re, grupo in periodo_df.groupby(fp_re):
+        if re in final_df.index:
+            final_df.at[re, "Qtd. Dias Trabalhados"] = len(grupo)
 
     # -------------------------------------------------------------------------
-    # SALVAR
+    # SALVAR ARQUIVO FINAL
     # -------------------------------------------------------------------------
     final_df.reset_index(inplace=True)
 
