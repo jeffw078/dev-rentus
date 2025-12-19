@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <title>Módulo em desenvolvimento</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-900 text-slate-200 min-h-screen flex flex-col">
+
+  <!-- HEADER -->
+  <header class="w-full flex items-center justify-between py-4 px-6 bg-slate-800 border-b border-slate-700 shadow-sm">
+    <div class="flex items-center gap-3">
+      <img src="/static/images/logo.png" alt="Rentus" class="h-10">
+      <span class="text-xl font-bold">Em desenvolvimento - </span>
+    </div>
+
+    <button
+      onclick="window.location.href='/'"
+      class="px-4 py-2 rounded-full text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 shadow"
+    >
+      Voltar
+    </button>
+  </header>
+
+  <!-- MAIN CONTENT CENTRALIZADO -->
+  <main class="flex-1 flex items-center justify-center px-4 pb-8">
+
+    <!-- UPLOAD SECTION (CAIXA DO GIF) -->
+    <section class="w-full max-w-4xl bg-slate-800 border border-slate-700 rounded-2xl shadow p-6 mb-6">
+
+      <h2 class="text-lg font-semibold mb-2 text-center">Módulo em desenvolvimento</h2>
+      <p class="text-sm text-slate-400 mb-4 text-center">
+        Em breve este módulo estará
+        <strong class="text-green-400">Disponível</strong>
+      </p>
+
+      <form id="uploadForm" class="space-y-5">
+
+        <!-- GIF CENTRALIZADO -->
+        <img 
+          src="/static/images/dev.gif" 
+          alt="Rentus"
+          class="mx-auto"
+          style="width:350px; height:210px;"
+        >
+
+      </form>
+
+    </section>
+
+  </main>
+
+</body>
+</html>

@@ -1,0 +1,12 @@
+[INFO] ======================================
+[INFO] Iniciando análise de ficha presença
+[INFO] ======================================
+[INFO] Salvando ficha presença em C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\app\uploads\FP.xlsx...
+[ERROR] Erro inesperado na análise de ficha presença:
+Traceback (most recent call last):
+  File "C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\app\main.py", line 187, in ficha_processar
+    from projects import LocalizaSituacao
+  File "C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\projects\LocalizaSituacao.py", line 3, in <module>
+    import unidecode
+ModuleNotFoundError: No module named 'unidecode'
+

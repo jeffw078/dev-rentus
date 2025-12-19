@@ -1,0 +1,41 @@
+[INFO] ================================
+[INFO] Iniciando processamento MÓDULO 1
+[INFO] ================================
+[INFO] Salvando OPS.xlsx em /uploads...
+[INFO] Salvando demitidos.xls em /uploads...
+[INFO] Salvando AVISO_PREVIO.xls em /uploads...
+[INFO] Salvando hk_avulso.xls em /uploads...
+[INFO] Salvando fp.xlsx em /uploads...
+[INFO] Salvando situacao.xlsx em /uploads...
+[INFO] Iniciando processamento do Módulo VR – VA – CESTA...
+[INFO] Iniciando processamento interno do Módulo 1...
+[INFO] Etapa 1 - Leitura dos arquivos
+[INFO] Detectando formato do arquivo: OPS.xlsx
+[INFO] OPS.xlsx é XLSX válido (ZIP).
+[OK] OPS.xlsx carregado com 18 linhas.
+[INFO] Detectando formato do arquivo: demitidos.xls
+[INFO] demitidos.xls é XLSX válido (ZIP).
+[OK] demitidos.xls carregado com 6747 linhas.
+[INFO] Detectando formato do arquivo: AVISO_PREVIO.xls
+[WARN] AVISO_PREVIO.xls NÃO é XLSX verdadeiro. Tentando como XLS antigo...
+[ERROR] Falha ao interpretar AVISO_PREVIO.xls: Arquivo não é OLE e não é XLSX válido.
+[ERROR] Erro inesperado no módulo 1:
+Traceback (most recent call last):
+  File "C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\projects\modulo1\Modulo1.py", line 50, in read_excel_safely
+    raise ValueError("Arquivo não é OLE e não é XLSX válido.")
+ValueError: Arquivo não é OLE e não é XLSX válido.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\app\main.py", line 141, in modulo1_process
+    output_file, process_logs = process_modulo1(
+                                ^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\projects\modulo1\Modulo1.py", line 134, in process_modulo1
+    aviso = read_excel_safely(aviso_path, logger)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\projects\modulo1\Modulo1.py", line 85, in read_excel_safely
+    raise ValueError(
+ValueError: Arquivo 'AVISO_PREVIO.xls' não pôde ser lido como XLSX nem XLS.
+Abra no Excel e salve novamente como XLSX válido.
+

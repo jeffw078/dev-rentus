@@ -1,0 +1,42 @@
+[INFO] Iniciando processamento — Módulo 1
+[INFO] Arquivo salvo: C:\Users\Jefferson\Desktop\revisão 4\RENTUS ANALYZER\app\uploads\OPS.xlsx
+[INFO] Arquivo salvo: C:\Users\Jefferson\Desktop\revisão 4\RENTUS ANALYZER\app\uploads\demitidos.xls
+[INFO] Arquivo salvo: C:\Users\Jefferson\Desktop\revisão 4\RENTUS ANALYZER\app\uploads\AVISO_PREVIO.xls
+[INFO] Arquivo salvo: C:\Users\Jefferson\Desktop\revisão 4\RENTUS ANALYZER\app\uploads\hk_avulso.xlsx
+[INFO] Arquivo salvo: C:\Users\Jefferson\Desktop\revisão 4\RENTUS ANALYZER\app\uploads\fp.xlsx
+[INFO] Arquivo salvo: C:\Users\Jefferson\Desktop\revisão 4\RENTUS ANALYZER\app\uploads\situacao.xlsx
+Traceback (most recent call last):
+  File "C:\Users\Jefferson\Desktop\revisão 4\RENTUS ANALYZER\projects\modulo1\Modulo1.py", line 19, in read_excel_safe
+    return pd.read_excel(path, engine="xlrd")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\io\excel\_base.py", line 495, in read_excel
+    io = ExcelFile(
+         ^^^^^^^^^^
+  File "C:\Users\Jefferson\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\io\excel\_base.py", line 1567, in __init__
+    self._reader = self._engines[engine](
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\io\excel\_xlrd.py", line 46, in __init__
+    super().__init__(
+  File "C:\Users\Jefferson\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\io\excel\_base.py", line 573, in __init__
+    self.book = self.load_workbook(self.handles.handle, engine_kwargs)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\io\excel\_xlrd.py", line 63, in load_workbook
+    return open_workbook(file_contents=data, **engine_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\AppData\Local\Programs\Python\Python312\Lib\site-packages\xlrd\__init__.py", line 170, in open_workbook
+    raise XLRDError(FILE_FORMAT_DESCRIPTIONS[file_format]+'; not supported')
+xlrd.biffh.XLRDError: Excel xlsx file; not supported
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Jefferson\Desktop\revisão 4\RENTUS ANALYZER\app\main.py", line 104, in modulo1_process
+    output_file = process_modulo1(
+                  ^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\Desktop\revisão 4\RENTUS ANALYZER\projects\modulo1\Modulo1.py", line 184, in process_modulo1
+    dem_df = read_excel_safe(demitidos_path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\Desktop\revisão 4\RENTUS ANALYZER\projects\modulo1\Modulo1.py", line 23, in read_excel_safe
+    raise ValueError(f"Erro ao ler {path}: {e}")
+ValueError: Erro ao ler C:\Users\Jefferson\Desktop\revisão 4\RENTUS ANALYZER\app\uploads\demitidos.xls: Excel xlsx file; not supported
+

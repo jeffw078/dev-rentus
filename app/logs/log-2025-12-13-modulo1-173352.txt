@@ -1,0 +1,7 @@
+[INFO] Iniciando processamento — Módulo 1
+[INFO] Arquivo salvo: C:\Users\Jefferson\Desktop\revisão 4\RENTUS ANALYZER\app\uploads\OPS.xlsx
+[INFO] Arquivo salvo: C:\Users\Jefferson\Desktop\revisão 4\RENTUS ANALYZER\app\uploads\demitidos.xls
+[INFO] Arquivo salvo: C:\Users\Jefferson\Desktop\revisão 4\RENTUS ANALYZER\app\uploads\AVISO_PREVIO.xls
+[INFO] Arquivo salvo: C:\Users\Jefferson\Desktop\revisão 4\RENTUS ANALYZER\app\uploads\hk_avulso.xlsx
+[INFO] Arquivo salvo: C:\Users\Jefferson\Desktop\revisão 4\RENTUS ANALYZER\app\uploads\fp.xlsx
+[INFO] Arquivo salvo: C:\Users\Jefferson\Desktop\revisão 4\RENTUS ANALYZER\app\uploads\situacao.xlsx

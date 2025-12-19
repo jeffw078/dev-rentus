@@ -1,0 +1,15 @@
+[INFO] ======================================
+[INFO] Iniciando análise de ficha presença
+[INFO] ======================================
+[INFO] Salvando ficha presença em C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\app\uploads\FP.xlsx...
+[ERROR] Erro inesperado na análise de ficha presença:
+Traceback (most recent call last):
+  File "C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\app\main.py", line 187, in ficha_processar
+    from projects import LocalizaSituacao
+  File "C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\projects\LocalizaSituacao.py", line 26, in <module>
+    df = carregar_fp()
+         ^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\projects\LocalizaSituacao.py", line 22, in carregar_fp
+    raise FileNotFoundError("Nenhum arquivo FP.xlsx ou FP.xls encontrado na pasta.")
+FileNotFoundError: Nenhum arquivo FP.xlsx ou FP.xls encontrado na pasta.
+

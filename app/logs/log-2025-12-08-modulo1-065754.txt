@@ -1,0 +1,49 @@
+[INFO] ======================================
+[INFO] Iniciando processamento MÓDULO 1
+[INFO] ======================================
+[INFO] Salvando OPS.xlsx em C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\app\uploads\OPS.xlsx...
+[INFO] Salvando demitidos.xls em C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\app\uploads\demitidos.xls...
+[INFO] Salvando AVISO_PREVIO.xls em C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\app\uploads\AVISO_PREVIO.xls...
+[INFO] Salvando hk_avulso.xls em C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\app\uploads\hk_avulso.xls...
+[INFO] Salvando fp.xlsx em C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\app\uploads\fp.xlsx...
+[INFO] Salvando situacao.xlsx em C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\app\uploads\situacao.xlsx...
+[ERROR] Erro inesperado no módulo 1:
+Traceback (most recent call last):
+  File "C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\app\main.py", line 120, in modulo1_process
+    output_file, process_logs = process_modulo1(
+                                ^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\projects\modulo1\Modulo1.py", line 157, in process_modulo1
+    sit_df = read_excel_with_engine(situacao_path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\projects\modulo1\Modulo1.py", line 25, in read_excel_with_engine
+    return pd.read_excel(path, engine="openpyxl")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\io\excel\_base.py", line 495, in read_excel
+    io = ExcelFile(
+         ^^^^^^^^^^
+  File "C:\Users\Jefferson\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\io\excel\_base.py", line 1567, in __init__
+    self._reader = self._engines[engine](
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\io\excel\_openpyxl.py", line 553, in __init__
+    super().__init__(
+  File "C:\Users\Jefferson\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\io\excel\_base.py", line 573, in __init__
+    self.book = self.load_workbook(self.handles.handle, engine_kwargs)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\io\excel\_openpyxl.py", line 572, in load_workbook
+    return load_workbook(
+           ^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\AppData\Local\Programs\Python\Python312\Lib\site-packages\openpyxl\reader\excel.py", line 346, in load_workbook
+    reader = ExcelReader(filename, read_only, keep_vba,
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\AppData\Local\Programs\Python\Python312\Lib\site-packages\openpyxl\reader\excel.py", line 123, in __init__
+    self.archive = _validate_archive(fn)
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\AppData\Local\Programs\Python\Python312\Lib\site-packages\openpyxl\reader\excel.py", line 95, in _validate_archive
+    archive = ZipFile(filename, 'r')
+              ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\AppData\Local\Programs\Python\Python312\Lib\zipfile\__init__.py", line 1349, in __init__
+    self._RealGetContents()
+  File "C:\Users\Jefferson\AppData\Local\Programs\Python\Python312\Lib\zipfile\__init__.py", line 1416, in _RealGetContents
+    raise BadZipFile("File is not a zip file")
+zipfile.BadZipFile: File is not a zip file
+

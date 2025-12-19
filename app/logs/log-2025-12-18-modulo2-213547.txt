@@ -1,0 +1,13 @@
+[INFO] Iniciando processamento — Módulo 2 (Suprimentos)
+[INFO] XML carregado: empresa_dados_1.xml
+[INFO] XML carregado: empresa_dados_2.xml
+[INFO] XML carregado: empresa_dados_3.xml
+[INFO] XML carregado: empresa_dados_4.xml
+[INFO] XML carregado: empresa_dados_5.xml
+[INFO] XML carregado: empresa_dados_6.xml
+[INFO] XML carregado: empresa_dados_7.xml
+[INFO] XML carregado: empresa_dados_8.xml
+[INFO] XML carregado: empresa_dados_9.xml
+[INFO] XML carregado: empresa_dados_10.xml
+[INFO] Chamando process_suprimentos_xml()
+[INFO] Processamento concluído com sucesso

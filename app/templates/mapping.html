@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Protótipo — Leitura e Interpretação de Planilhas (Dinâmico)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    .soft-scroll::-webkit-scrollbar { height: 10px; width: 10px; }
+    .soft-scroll::-webkit-scrollbar-thumb { background: rgba(148,163,184,.25); border-radius: 999px; }
+    .soft-scroll::-webkit-scrollbar-track { background: rgba(15,23,42,.35); }
+    .glass { backdrop-filter: blur(10px); }
+  </style>
+</head>
+
+<body class="bg-slate-900 text-slate-200 min-h-screen">
+  <header class="sticky top-0 z-40 bg-slate-800/90 glass border-b border-slate-700 shadow-sm">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center gap-4">
+      <div class="flex items-center gap-3">
+        <div class="h-10 w-10 rounded-2xl bg-slate-900 border border-slate-700 grid place-items-center">📊</div>
+        <div class="leading-tight">
+          <div class="text-xl font-bold">Protótipo — Mapeamento Dinâmico</div>
+          <div class="text-xs text-slate-400">Upload → leitura de cabeçalhos → mapeamento → regras → JSON de configuração</div>
+        </div>
+      </div>
+      <div class="ml-auto flex items-center gap-2">
+        <span id="pill" class="text-xs px-3 py-1 rounded-full bg-slate-700 border border-slate-600">Aguardando arquivos</span>
+        <button onclick="exportConfig()"
+          class="px-4 py-2 rounded-full text-sm font-semibold bg-sky-600 hover:bg-sky-500 text-white shadow">
+          Exportar config JSON
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-6 py-8 space-y-6">
+
+    <section class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-6">
+      <div class="flex flex-col md:flex-row md:items-end gap-4">
+        <div class="flex-1">
+          <div class="text-xs text-slate-400">Etapa 1</div>
+          <div class="text-lg font-bold">Carregar planilhas</div>
+          <div class="text-sm text-slate-400 mt-1">
+            Este protótipo lê o <b>header</b> (linha 1) da primeira aba de cada arquivo e mostra as colunas para você mapear.
+          </div>
+        </div>
+
+        <div class="flex gap-2 w-full md:w-auto">
+          <label class="flex-1 md:flex-none cursor-pointer bg-slate-900 border border-slate-700 hover:border-slate-500 rounded-xl px-4 py-2 text-sm font-semibold text-slate-200 flex items-center justify-center gap-2">
+            <input id="fileInput" type="file" multiple accept=".xlsx,.xls" class="hidden" />
+            ⬆️ Selecionar arquivos
+          </label>
+          <button onclick="clearAll()"
+            class="bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-xl px-4 py-2 text-sm font-semibold">
+            Limpar
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-5 grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4">
+          <div class="text-xs text-slate-400">Dica rápida</div>
+          <div class="text-sm mt-1">
+            Dê “nome lógico” para cada planilha (OPS, HK, DEMITIDOS, AVISO, SITUACAO, FP). Depois você mapeia as colunas.
+          </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4">
+          <div class="text-xs text-slate-400">Como o sistema usa isso</div>
+          <div class="text-sm mt-1">
+            1) Normaliza colunas → 2) Junta por chave (RE/CPF) → 3) Aplica regras (comparação, filtros, tolerância) → 4) Gera dashboard/Excel.
+          </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4">
+          <div class="text-xs text-slate-400">Sem dependências pesadas</div>
+          <div class="text-sm mt-1">
+            Aqui é só visual + leitura de cabeçalho. No backend você salva a configuração por cliente e reaproveita.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-slate-800 border border-slate-700 rounded-2xl shadow">
+      <div class="p-6 border-b border-slate-700">
+        <div class="text-xs text-slate-400">Etapa 2</div>
+        <div class="text-lg font-bold">Fontes detectadas e colunas</div>
+        <div class="text-sm text-slate-400 mt-1">
+          Para cada arquivo: defina um <b>nome lógico</b> e visualize as colunas encontradas.
+        </div>
+      </div>
+
+      <div id="sourcesWrap" class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="text-slate-400 text-sm">Nenhum arquivo carregado ainda.</div>
+      </div>
+    </section>
+
+    <section class="bg-slate-800 border border-slate-700 rounded-2xl shadow">
+      <div class="p-6 border-b border-slate-700 flex items-start justify-between gap-4">
+        <div>
+          <div class="text-xs text-slate-400">Etapa 3</div>
+          <div class="text-lg font-bold">Mapeamento por arquivo</div>
+          <div class="text-sm text-slate-400 mt-1">
+            Exemplo: “RE = codvigil”, “VALOR_OP = valpag”, “SITUACAO = descsituacao”… sem depender do nome real das colunas.
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="autoSuggest()"
+            class="bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-xl px-4 py-2 text-sm font-semibold">
+            Auto-sugerir
+          </button>
+        </div>
+      </div>
+
+      <div class="p-6">
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4">
+            <div class="text-sm font-semibold">Campos lógicos (padrão)</div>
+            <div class="text-xs text-slate-400 mt-1">Reutilize estes campos em todos os módulos.</div>
+
+            <div class="mt-3 space-y-2 text-sm">
+              <div class="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-3 py-2"><span>RE</span><span class="text-xs text-slate-400">chave</span></div>
+              <div class="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-3 py-2"><span>NOME</span><span class="text-xs text-slate-400">identificação</span></div>
+              <div class="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-3 py-2"><span>VALOR_OP</span><span class="text-xs text-slate-400">esperado</span></div>
+              <div class="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-3 py-2"><span>VALOR_ENCONTRADO</span><span class="text-xs text-slate-400">real</span></div>
+              <div class="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-3 py-2"><span>DATA</span><span class="text-xs text-slate-400">competência</span></div>
+              <div class="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-3 py-2"><span>STATUS</span><span class="text-xs text-slate-400">ativo/demitido</span></div>
+              <div class="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-3 py-2"><span>CARGO</span><span class="text-xs text-slate-400">enriquecimento</span></div>
+              <div class="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-3 py-2"><span>ESCALA</span><span class="text-xs text-slate-400">enriquecimento</span></div>
+              <div class="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-3 py-2"><span>SITUACAO</span><span class="text-xs text-slate-400">enriquecimento</span></div>
+            </div>
+          </div>
+
+          <div class="xl:col-span-2 bg-slate-900 border border-slate-700 rounded-2xl p-4">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="text-sm font-semibold">Editor de mapeamento</div>
+                <div class="text-xs text-slate-400 mt-1">Escolha uma fonte e mapeie campos lógicos para colunas reais.</div>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <label class="text-xs text-slate-400">Fonte</label>
+                <select id="mapSourceSelect" class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm"></select>
+              </div>
+            </div>
+
+            <div id="mappingGrid" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div class="text-slate-400 text-sm">Carregue planilhas para mapear.</div>
+            </div>
+
+            <div class="mt-4 bg-slate-800 border border-slate-700 rounded-2xl p-4">
+              <div class="text-xs text-slate-400">Preview do mapeamento selecionado</div>
+              <pre id="mappingPreview" class="mt-2 text-xs bg-slate-900 border border-slate-700 rounded-xl p-3 overflow-auto soft-scroll">{}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-slate-800 border border-slate-700 rounded-2xl shadow">
+      <div class="p-6 border-b border-slate-700">
+        <div class="text-xs text-slate-400">Etapa 4</div>
+        <div class="text-lg font-bold">Regras entre fontes (comparações)</div>
+        <div class="text-sm text-slate-400 mt-1">
+          Ex.: <b>OPS.VALOR_OP</b> vs <b>HK.VALOR_ENCONTRADO</b>, com chave RE e tolerância.
+        </div>
+      </div>
+
+      <div class="p-6 grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <div class="xl:col-span-2 bg-slate-900 border border-slate-700 rounded-2xl p-5">
+          <div class="text-sm font-semibold">Construtor de regra</div>
+
+          <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <label class="block">
+              <span class="text-xs text-slate-400">Fonte A (esperado)</span>
+              <select id="ruleSrcA" class="mt-1 w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm"></select>
+            </label>
+
+            <label class="block">
+              <span class="text-xs text-slate-400">Campo A</span>
+              <select id="ruleFieldA" class="mt-1 w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm"></select>
+            </label>
+
+            <label class="block">
+              <span class="text-xs text-slate-400">Fonte B (encontrado)</span>
+              <select id="ruleSrcB" class="mt-1 w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm"></select>
+            </label>
+
+            <label class="block">
+              <span class="text-xs text-slate-400">Campo B</span>
+              <select id="ruleFieldB" class="mt-1 w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm"></select>
+            </label>
+
+            <label class="block">
+              <span class="text-xs text-slate-400">Chave de junção</span>
+              <select id="ruleJoinKey" class="mt-1 w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm">
+                <option value="RE">RE</option>
+                <option value="CPF">CPF</option>
+              </select>
+            </label>
+
+            <label class="block">
+              <span class="text-xs text-slate-400">Tolerância (R$)</span>
+              <input id="ruleTol" type="number" step="0.01" value="0.50"
+                class="mt-1 w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm"/>
+            </label>
+          </div>
+
+          <div class="mt-4 flex flex-wrap gap-2 items-center">
+            <button onclick="addRule()"
+              class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl px-4 py-2 shadow">
+              + Adicionar regra
+            </button>
+
+            <button onclick="addPresetModulo1()"
+              class="bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-xl px-4 py-2 text-sm font-semibold">
+              Preset Módulo 1 (exemplo)
+            </button>
+
+            <span class="text-xs text-slate-400">As regras viram JSON (pra engine do backend executar).</span>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-5">
+          <div class="text-sm font-semibold">Regras adicionadas</div>
+          <div class="text-xs text-slate-400 mt-1">Clique para remover.</div>
+
+          <div id="rulesList" class="mt-3 space-y-2 text-sm"></div>
+
+          <div class="mt-4 bg-slate-800 border border-slate-700 rounded-2xl p-4">
+            <div class="text-xs text-slate-400">Preview JSON do módulo</div>
+            <pre id="configPreview" class="mt-2 text-xs bg-slate-900 border border-slate-700 rounded-xl p-3 overflow-auto soft-scroll">{}</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="text-xs text-slate-500 pb-10">
+      Protótipo visual (front-end). O próximo passo é salvar este JSON e o backend usar para ler as 6 planilhas, mapear e executar as regras.
+    </footer>
+  </main>
+
+  <script>
+    const state = { sources: {}, rules: [] };
+    const LOGICAL_FIELDS = ["RE","NOME","VALOR_OP","VALOR_ENCONTRADO","DATA","STATUS","CARGO","ESCALA","SITUACAO"];
+    const DEFAULT_SOURCE_SUGGESTIONS = ["OPS","HK","DEMITIDOS","AVISO_PREVIO","SITUACAO","FP"];
+
+    function setPill(text, kind="neutral"){
+      const el = document.getElementById("pill");
+      el.textContent = text;
+      el.className = "text-xs px-3 py-1 rounded-full border";
+      if(kind==="ok") el.classList.add("bg-emerald-900/30","border-emerald-700","text-emerald-200");
+      else if(kind==="warn") el.classList.add("bg-amber-900/30","border-amber-700","text-amber-200");
+      else if(kind==="bad") el.classList.add("bg-rose-900/30","border-rose-700","text-rose-200");
+      else el.classList.add("bg-slate-700","border-slate-600","text-slate-200");
+    }
+
+    function escapeHtml(str){
+      return String(str ?? "")
+        .replaceAll("&","&amp;").replaceAll("<","&lt;")
+        .replaceAll(">","&gt;").replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function downloadText(filename, text){
+      const blob = new Blob([text], {type:"application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function readHeadersFromFile(file){
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, {type:"array"});
+      const sheetName = wb.SheetNames[0];
+      const ws = wb.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1, blankrows:false});
+      const headerRow = (rows && rows.length) ? (rows[0] || []) : [];
+      return headerRow.map(x => String(x).trim()).filter(Boolean);
+    }
+
+    function renderSources(){
+      const wrap = document.getElementById("sourcesWrap");
+      const keys = Object.keys(state.sources);
+      if(keys.length === 0){
+        wrap.innerHTML = `<div class="text-slate-400 text-sm">Nenhum arquivo carregado ainda.</div>`;
+        syncSelectors();
+        refreshConfigPreview();
+        setPill("Aguardando arquivos", "neutral");
+        return;
+      }
+
+      wrap.innerHTML = keys.map((id, idx) => {
+        const s = state.sources[id];
+        const suggested = DEFAULT_SOURCE_SUGGESTIONS[idx] || `FONTE_${idx+1}`;
+        const logical = s.logicalName || suggested;
+        const chips = (s.headers || []).slice(0, 10).map(h =>
+          `<span class="text-xs px-2 py-1 rounded-full bg-slate-800 border border-slate-700">${escapeHtml(h)}</span>`
+        ).join("");
+        const more = (s.headers.length > 10) ? `<span class="text-xs text-slate-400 ml-2">+${s.headers.length-10}...</span>` : "";
+
+        return `
+          <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="text-sm font-semibold">${escapeHtml(s.fileName)}</div>
+                <div class="text-xs text-slate-400 mt-1">Colunas detectadas: <b>${s.headers.length}</b></div>
+              </div>
+              <button onclick="removeSource('${id}')"
+                class="text-xs bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-xl px-3 py-2">
+                Remover
+              </button>
+            </div>
+
+            <div class="mt-4">
+              <label class="text-xs text-slate-400">Nome lógico da fonte</label>
+              <input value="${escapeHtml(logical)}" oninput="setLogicalName('${id}', this.value)"
+                class="mt-1 w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm"/>
+              <div class="text-[11px] text-slate-500 mt-1">Ex.: OPS, HK, DEMITIDOS, AVISO_PREVIO, SITUACAO, FP</div>
+            </div>
+
+            <div class="mt-4 flex flex-wrap gap-2 max-h-28 overflow-auto soft-scroll">
+              ${chips}${more}
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      setPill(`${keys.length} arquivo(s) carregado(s)`, "ok");
+      syncSelectors();
+      refreshConfigPreview();
+    }
+
+    function setLogicalName(id, name){
+      state.sources[id].logicalName = (name || "").trim().toUpperCase();
+      syncSelectors();
+      refreshConfigPreview();
+    }
+
+    function removeSource(id){
+      delete state.sources[id];
+      state.rules = state.rules.filter(r => r.srcA !== id && r.srcB !== id);
+      renderSources();
+      renderRules();
+      renderMappingEditor();
+    }
+
+    function clearAll(){
+      state.sources = {};
+      state.rules = [];
+      document.getElementById("mappingGrid").innerHTML = `<div class="text-slate-400 text-sm">Carregue planilhas para mapear.</div>`;
+      document.getElementById("mappingPreview").textContent = "{}";
+      document.getElementById("rulesList").innerHTML = "";
+      document.getElementById("configPreview").textContent = "{}";
+      renderSources();
+    }
+
+    function syncSelectors(){
+      const ids = Object.keys(state.sources);
+
+      const mapSel = document.getElementById("mapSourceSelect");
+      mapSel.innerHTML = ids.map(id => {
+        const s = state.sources[id];
+        const label = `${s.logicalName || id} — ${s.fileName}`;
+        return `<option value="${id}">${escapeHtml(label)}</option>`;
+      }).join("");
+
+      const ruleSrcA = document.getElementById("ruleSrcA");
+      const ruleSrcB = document.getElementById("ruleSrcB");
+      ruleSrcA.innerHTML = ids.map(id => `<option value="${id}">${escapeHtml(state.sources[id].logicalName || id)}</option>`).join("");
+      ruleSrcB.innerHTML = ids.map(id => `<option value="${id}">${escapeHtml(state.sources[id].logicalName || id)}</option>`).join("");
+
+      mapSel.onchange = renderMappingEditor;
+      ruleSrcA.onchange = syncRuleFields;
+      ruleSrcB.onchange = syncRuleFields;
+
+      if(ids.length){
+        if(!mapSel.value) mapSel.value = ids[0];
+        if(!ruleSrcA.value) ruleSrcA.value = ids[0];
+        if(!ruleSrcB.value) ruleSrcB.value = ids[Math.min(1, ids.length-1)];
+      }
+
+      renderMappingEditor();
+      syncRuleFields();
+    }
+
+    function renderMappingEditor(){
+      const ids = Object.keys(state.sources);
+      const grid = document.getElementById("mappingGrid");
+      if(ids.length === 0){
+        grid.innerHTML = `<div class="text-slate-400 text-sm">Carregue planilhas para mapear.</div>`;
+        document.getElementById("mappingPreview").textContent = "{}";
+        return;
+      }
+
+      const sourceId = document.getElementById("mapSourceSelect").value || ids[0];
+      const src = state.sources[sourceId];
+      if(!src) return;
+
+      if(!src.mapping) src.mapping = {};
+
+      const options = [`<option value="">— escolher coluna —</option>`]
+        .concat(src.headers.map(h => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`))
+        .join("");
+
+      grid.innerHTML = LOGICAL_FIELDS.map(field => {
+        const current = src.mapping[field] || "";
+        const opts = options.replace(`value="${escapeHtml(current)}"`, `value="${escapeHtml(current)}" selected`);
+        return `
+          <div class="bg-slate-800 border border-slate-700 rounded-2xl p-3">
+            <div class="flex items-center justify-between">
+              <div class="text-sm font-semibold">${escapeHtml(field)}</div>
+              <button onclick="clearMapField('${sourceId}','${field}')"
+                class="text-xs bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-lg px-2 py-1">
+                limpar
+              </button>
+            </div>
+
+            <select class="mt-2 w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm"
+              onchange="setMapField('${sourceId}','${field}', this.value)">
+              ${opts}
+            </select>
+          </div>
+        `;
+      }).join("");
+
+      document.getElementById("mappingPreview").textContent = JSON.stringify(src.mapping, null, 2);
+      refreshConfigPreview();
+    }
+
+    function setMapField(sourceId, logicalField, realColumn){
+      const src = state.sources[sourceId];
+      src.mapping = src.mapping || {};
+      src.mapping[logicalField] = realColumn || "";
+      document.getElementById("mappingPreview").textContent = JSON.stringify(src.mapping, null, 2);
+      refreshConfigPreview();
+      syncRuleFields();
+    }
+
+    function clearMapField(sourceId, logicalField){
+      const src = state.sources[sourceId];
+      if(!src.mapping) return;
+      src.mapping[logicalField] = "";
+      renderMappingEditor();
+    }
+
+    function autoSuggest(){
+      const guessMap = {
+        "RE": ["re","codvigil","matricula","matrícula","registro"],
+        "NOME": ["rsocial","nome","funcionario","funcionário"],
+        "VALOR_OP": ["valpag","valor_op","valor ops","total_op","total"],
+        "VALOR_ENCONTRADO": ["valor_total","valor","vr","va","vt","benef","benefício"],
+        "DATA": ["data","dtavus","dt_avus","competencia","competência"],
+        "STATUS": ["situacao","situação","status","descsituacao"],
+        "CARGO": ["nomecargo","cargo"],
+        "ESCALA": ["nomeescala","escala"],
+        "SITUACAO": ["descsituacao","situacao","situação"]
+      };
+
+      for(const id of Object.keys(state.sources)){
+        const src = state.sources[id];
+        src.mapping = src.mapping || {};
+        const headersLower = src.headers.map(h => h.toLowerCase());
+
+        for(const lf of LOGICAL_FIELDS){
+          if(src.mapping[lf]) continue;
+          const candidates = guessMap[lf] || [];
+          let found = "";
+
+          for(const cand of candidates){
+            const idx = headersLower.findIndex(h => h.replace(/\s+/g,"").includes(cand.replace(/\s+/g,"")));
+            if(idx >= 0){ found = src.headers[idx]; break; }
+          }
+          if(found) src.mapping[lf] = found;
+        }
+      }
+      renderMappingEditor();
+      setPill("Auto-sugestão aplicada (revise)", "warn");
+    }
+
+    function syncRuleFields(){
+      const selectA = document.getElementById("ruleFieldA");
+      const selectB = document.getElementById("ruleFieldB");
+
+      const valueFields = LOGICAL_FIELDS.filter(f => f.startsWith("VALOR"));
+      selectA.innerHTML = valueFields.map(f => `<option value="${f}">${f}</option>`).join("");
+      selectB.innerHTML = valueFields.map(f => `<option value="${f}">${f}</option>`).join("");
+
+      selectA.value = "VALOR_OP";
+      selectB.value = "VALOR_ENCONTRADO";
+    }
+
+    function addRule(){
+      const srcA = document.getElementById("ruleSrcA").value;
+      const fieldA = document.getElementById("ruleFieldA").value;
+      const srcB = document.getElementById("ruleSrcB").value;
+      const fieldB = document.getElementById("ruleFieldB").value;
+      const joinKey = document.getElementById("ruleJoinKey").value;
+      const tol = Number(document.getElementById("ruleTol").value || 0);
+
+      if(!srcA || !srcB){
+        setPill("Selecione as fontes da regra", "warn");
+        return;
+      }
+
+      state.rules.push({ type: "compare", srcA, fieldA, srcB, fieldB, joinKey, tol });
+      renderRules();
+      refreshConfigPreview();
+      setPill("Regra adicionada", "ok");
+    }
+
+    function addPresetModulo1(){
+      const ids = Object.keys(state.sources);
+      if(ids.length < 2){
+        setPill("Carregue ao menos 2 fontes para usar preset", "warn");
+        return;
+      }
+      state.rules.push({
+        type: "compare",
+        srcA: ids[0],
+        fieldA: "VALOR_OP",
+        srcB: ids[1],
+        fieldB: "VALOR_ENCONTRADO",
+        joinKey: "RE",
+        tol: 0.5
+      });
+      renderRules();
+      refreshConfigPreview();
+      setPill("Preset aplicado (exemplo)", "warn");
+    }
+
+    function removeRule(idx){
+      state.rules.splice(idx, 1);
+      renderRules();
+      refreshConfigPreview();
+    }
+
+    function renderRules(){
+      const wrap = document.getElementById("rulesList");
+      if(!state.rules.length){
+        wrap.innerHTML = `<div class="text-slate-400 text-sm">Nenhuma regra adicionada.</div>`;
+        return;
+      }
+
+      wrap.innerHTML = state.rules.map((r, idx) => {
+        const a = state.sources[r.srcA]?.logicalName || r.srcA;
+        const b = state.sources[r.srcB]?.logicalName || r.srcB;
+        return `
+          <button onclick="removeRule(${idx})"
+            class="w-full text-left bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl px-3 py-2">
+            <div class="text-sm font-semibold">Comparar</div>
+            <div class="text-xs text-slate-400 mt-0.5">
+              ${escapeHtml(a)}.${escapeHtml(r.fieldA)} vs ${escapeHtml(b)}.${escapeHtml(r.fieldB)}
+              • chave ${escapeHtml(r.joinKey)} • tol R$ ${Number(r.tol||0).toFixed(2)}
+            </div>
+          </button>
+        `;
+      }).join("");
+    }
+
+    function buildConfig(){
+      const sources = {};
+      for(const id of Object.keys(state.sources)){
+        const s = state.sources[id];
+        sources[s.logicalName || id] = { fileName: s.fileName, mapping: s.mapping || {} };
+      }
+
+      return {
+        module: "moduloX",
+        base: guessBaseSource(),
+        sources,
+        rules: state.rules.map(r => ({
+          type: r.type,
+          sourceA: (state.sources[r.srcA]?.logicalName || r.srcA),
+          fieldA: r.fieldA,
+          sourceB: (state.sources[r.srcB]?.logicalName || r.srcB),
+          fieldB: r.fieldB,
+          joinKey: r.joinKey,
+          tolerance: Number(r.tol || 0)
+        }))
+      };
+    }
+
+    function guessBaseSource(){
+      const ids = Object.keys(state.sources);
+      if(!ids.length) return "";
+      const found = ids.find(id => (state.sources[id].logicalName||"").includes("OPS"));
+      return found ? (state.sources[found].logicalName || found) : (state.sources[ids[0]].logicalName || ids[0]);
+    }
+
+    function refreshConfigPreview(){
+      document.getElementById("configPreview").textContent = JSON.stringify(buildConfig(), null, 2);
+    }
+
+    function exportConfig(){
+      const cfg = buildConfig();
+      downloadText("modulo_config.json", JSON.stringify(cfg, null, 2));
+      setPill("Config exportada (JSON)", "ok");
+    }
+
+    document.getElementById("fileInput").addEventListener("change", async (e) => {
+      const files = Array.from(e.target.files || []);
+      if(!files.length) return;
+
+      setPill("Lendo cabeçalhos…", "warn");
+
+      for(const file of files){
+        const id = crypto.randomUUID();
+        try{
+          const headers = await readHeadersFromFile(file);
+          state.sources[id] = { fileName: file.name, headers, logicalName: "", mapping: {} };
+        }catch(err){
+          console.error(err);
+          setPill(`Falha ao ler ${file.name}`, "bad");
+        }
+      }
+
+      renderSources();
+      renderRules();
+      refreshConfigPreview();
+      if(Object.keys(state.sources).length) setPill("Cabeçalhos lidos. Mapeie as colunas.", "ok");
+    });
+
+    renderSources();
+    renderRules();
+    refreshConfigPreview();
+  </script>
+</body>
+</html>

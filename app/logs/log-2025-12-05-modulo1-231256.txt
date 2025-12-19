@@ -1,0 +1,61 @@
+[INFO] ================================
+[INFO] Iniciando processamento MÓDULO 1
+[INFO] ================================
+[INFO] Salvando OPS.xlsx em /uploads...
+[INFO] Salvando demitidos.xls em /uploads...
+[INFO] Salvando AVISO_PREVIO.xls em /uploads...
+[INFO] Salvando hk_avulso.xls em /uploads...
+[INFO] Salvando fp.xlsx em /uploads...
+[INFO] Salvando situacao.xlsx em /uploads...
+[INFO] Iniciando processamento do Módulo VR – VA – CESTA...
+[INFO] Iniciando processamento interno do Módulo 1...
+[INFO] Etapa 1 - Leitura dos arquivos
+[INFO] Detectando formato do arquivo: OPS.xlsx
+[INFO] OPS.xlsx é XLSX válido (ZIP).
+[OK] OPS.xlsx carregado com 18 linhas.
+[INFO] Detectando formato do arquivo: demitidos.xls
+[WARN] demitidos.xls NÃO é XLSX verdadeiro. Tentando como XLS antigo...
+[INFO] Lendo stream Workbook do XLS...
+[ERROR] Falha ao interpretar demitidos.xls: 6 columns passed, passed data had 28 columns
+[ERROR] Erro inesperado no módulo 1:
+Traceback (most recent call last):
+  File "C:\Users\Jefferson\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\core\internals\construction.py", line 939, in _finalize_columns_and_data
+    columns = _validate_or_indexify_columns(contents, columns)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\core\internals\construction.py", line 986, in _validate_or_indexify_columns
+    raise AssertionError(
+AssertionError: 6 columns passed, passed data had 28 columns
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\projects\modulo1\Modulo1.py", line 78, in read_excel_safely
+    df = pd.DataFrame(content, columns=header)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\core\frame.py", line 851, in __init__
+    arrays, columns, index = nested_data_to_arrays(
+                             ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\core\internals\construction.py", line 520, in nested_data_to_arrays
+    arrays, columns = to_arrays(data, columns, dtype=dtype)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\core\internals\construction.py", line 845, in to_arrays
+    content, columns = _finalize_columns_and_data(arr, columns, dtype)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\core\internals\construction.py", line 942, in _finalize_columns_and_data
+    raise ValueError(err) from err
+ValueError: 6 columns passed, passed data had 28 columns
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\app\main.py", line 141, in modulo1_process
+    output_file, process_logs = process_modulo1(
+                                ^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\projects\modulo1\Modulo1.py", line 133, in process_modulo1
+    dem = read_excel_safely(demitidos_path, logger)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\projects\modulo1\Modulo1.py", line 85, in read_excel_safely
+    raise ValueError(
+ValueError: Arquivo 'demitidos.xls' não pôde ser lido como XLSX nem XLS.
+Abra no Excel e salve novamente como XLSX válido.
+

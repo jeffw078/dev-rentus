@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Rentus Análises — Dashboard BPO</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    /* Sidebar overlay (mesma ideia do layout enviado) */
+    #sideMenu {
+      position: fixed;
+      left: 0; top: 0;
+      height: 100vh;
+      width: 0;                 /* começa fechado */
+      background: #1e293b;      /* slate-800 */
+      overflow-x: hidden;
+      transition: width 0.25s ease-in-out;
+      z-index: 9999;
+      padding: 0;
+    }
+    #sideMenu.open { width: 360px; padding: 24px; }
+
+    #menuBackdrop {
+      display: none;
+      position: fixed;
+      left: 0; top: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.45);
+      z-index: 9990;
+    }
+
+    .tooltip:hover::after{
+      content: attr(data-tip);
+      position: absolute;
+      background: #000;
+      color: #fff;
+      padding: 6px 10px;
+      font-size: 12px;
+      border-radius: 8px;
+      top: 110%;
+      left: 0;
+      white-space: nowrap;
+      z-index: 99999;
+    }
+
+    /* Table sticky header */
+    .sticky-head thead th{
+      position: sticky;
+      top: 0;
+      background: #0f172a; /* slate-900 */
+      z-index: 10;
+    }
+
+    /* Scrollbar (discreto) */
+    .soft-scroll::-webkit-scrollbar { height: 10px; width: 10px; }
+    .soft-scroll::-webkit-scrollbar-thumb { background: rgba(148,163,184,.25); border-radius: 999px; }
+    .soft-scroll::-webkit-scrollbar-track { background: rgba(15,23,42,.35); }
+  </style>
+</head>
+
+<body class="bg-slate-900 text-slate-200 min-h-screen flex flex-col">
+
+  <!-- BACKDROP -->
+  <div id="menuBackdrop" onclick="toggleMenu()"></div>
+
+  <!-- HEADER -->
+  <header class="w-full flex items-center justify-start gap-4 py-4 px-6 bg-slate-800 border-b border-slate-700 shadow-sm">
+    <button onclick="toggleMenu()" class="text-2xl select-none leading-none" aria-label="Abrir menu">☰</button>
+
+    <div class="flex items-center gap-3">
+      <img src="/static/images/logo.png" alt="Rentus" class="h-10">
+      <div class="leading-tight">
+        <div class="text-xl font-bold">Rentus Análises</div>
+        <div class="text-xs text-slate-400 -mt-0.5">Dashboard BPO Financeiro & Auditoria</div>
+      </div>
+    </div>
+
+    <div class="ml-auto flex items-center gap-2">
+      <span id="statusPill" class="text-xs px-3 py-1 rounded-full bg-slate-700 border border-slate-600 text-slate-200">
+        Pronto para validar
+      </span>
+      <button
+        onclick="window.location.href='/'"
+        class="px-4 py-2 rounded-full text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 shadow">
+        Voltar
+      </button>
+    </div>
+  </header>
+
+  <!-- MENU LATERAL -->
+  <aside id="sideMenu" class="select-none">
+    <button onclick="toggleMenu()" class="text-2xl mb-6 leading-none" aria-label="Fechar menu">✕</button>
+
+    <h2 class="text-lg font-bold mb-3">Ferramentas</h2>
+
+    <!-- Ficha Presença (mesma alusão do arquivo original) -->
+    <label class="tooltip cursor-pointer flex items-center gap-3 bg-slate-700 hover:bg-slate-600 px-4 py-3 rounded-lg transition relative"
+           data-tip="Clique, selecione o arquivo e simule o processamento">
+      <input type="file" id="fichaUpload" class="hidden" accept=".xlsx,.xls" onchange="simularFichaPresenca()">
+      📄 Análise de Ficha Presença
+    </label>
+    <div id="fichaStatus" class="mt-3 text-sm text-slate-300"></div>
+
+    <hr class="border-slate-700 my-6">
+
+    <h2 class="text-lg font-bold mb-3">Módulos</h2>
+    <div class="grid grid-cols-1 gap-2">
+      <button onclick="go('/modulo1')" class="w-full text-left bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg">MÓDULO 1 — VR/VA/CESTA</button>
+      <button onclick="go('/modulo2')" class="w-full text-left bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg">MÓDULO 2 — Horas suplementares</button>
+      <button onclick="go('/modulo3')" class="w-full text-left bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg">MÓDULO 3 — Férias Cheque</button>
+      <button onclick="go('/modulo4')" class="w-full text-left bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg">MÓDULO 4 — Seguro de vida</button>
+      <button onclick="go('/modulo5')" class="w-full text-left bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg">MÓDULO 5 — 13º salário</button>
+      <button onclick="go('/modulo6')" class="w-full text-left bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg">MÓDULO 6 — PLR</button>
+      <button onclick="go('/modulo7')" class="w-full text-left bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg">MÓDULO 7 — Combustível</button>
+      <button onclick="go('/modulo8')" class="w-full text-left bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg">MÓDULO 8 — Bonificação</button>
+      <button onclick="go('/modulo9')" class="w-full text-left bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg">MÓDULO 9 — Prêmio assiduidade</button>
+      <button onclick="go('/modulo10')" class="w-full text-left bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg">MÓDULO 10 — Uber</button>
+      <button onclick="go('/modulo11')" class="w-full text-left bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg">MÓDULO 11 — Cadastro</button>
+      <button onclick="go('/modulo12')" class="w-full text-left bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg">MÓDULO 12 — IAGF</button>
+      <button onclick="go('/modulo13')" class="w-full text-left bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg">MÓDULO 13 — GESP</button>
+      <button onclick="go('/modulo14')" class="w-full text-left bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg">MÓDULO 14 — Faturamento</button>
+      <button onclick="go('/modulo15')" class="w-full text-left bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg">MÓDULO 15 — Compras</button>
+      <button onclick="go('/modulo16')" class="w-full text-left bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg">MÓDULO 16 — Suprimentos</button>
+    </div>
+
+    <div class="mt-6 text-xs text-slate-400">
+      Dica: este dashboard está com dados fictícios (mock) para você plugar no backend depois.
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="flex-1 p-6 md:p-8 space-y-6">
+
+    <!-- FILTER BAR -->
+    <section class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5">
+      <div class="flex flex-col lg:flex-row lg:items-end gap-4">
+        <div class="flex-1">
+          <div class="text-sm text-slate-400">Período de auditoria</div>
+          <div class="text-lg font-semibold">Selecione o intervalo e aplique para recalcular as validações</div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 w-full lg:w-auto">
+          <label class="block">
+            <span class="text-xs text-slate-400">Data início</span>
+            <input id="dtInicio" type="date"
+              class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-500"/>
+          </label>
+
+          <label class="block">
+            <span class="text-xs text-slate-400">Data fim</span>
+            <input id="dtFim" type="date"
+              class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-500"/>
+          </label>
+
+          <div class="flex gap-2">
+            <button id="btnAplicar"
+              onclick="aplicarFiltro()"
+              class="flex-1 mt-6 sm:mt-0 bg-sky-600 hover:bg-sky-500 text-white font-semibold rounded-xl px-4 py-2 shadow">
+              Aplicar
+            </button>
+            <button onclick="resetar()"
+              class="mt-6 sm:mt-0 bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold rounded-xl px-4 py-2 border border-slate-600">
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4">
+          <div class="text-xs text-slate-400">Checagens rápidas</div>
+          <ul class="mt-2 space-y-1 text-sm">
+            <li class="flex items-center gap-2"><span class="text-slate-400">•</span> Pagamentos fora do período</li>
+            <li class="flex items-center gap-2"><span class="text-slate-400">•</span> Valores zerados/negativos</li>
+            <li class="flex items-center gap-2"><span class="text-slate-400">•</span> Duplicidade de CPF/benefício</li>
+          </ul>
+        </div>
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4">
+          <div class="text-xs text-slate-400">Conciliação</div>
+          <ul class="mt-2 space-y-1 text-sm">
+            <li class="flex items-center gap-2"><span class="text-slate-400">•</span> OPS (previsto) x Extrato/arquivo (real)</li>
+            <li class="flex items-center gap-2"><span class="text-slate-400">•</span> Ativos/afastados/demitidos no período</li>
+            <li class="flex items-center gap-2"><span class="text-slate-400">•</span> Lançamentos sem cadastro</li>
+          </ul>
+        </div>
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4">
+          <div class="text-xs text-slate-400">Auditoria de perdas (furos)</div>
+          <ul class="mt-2 space-y-1 text-sm">
+            <li class="flex items-center gap-2"><span class="text-slate-400">•</span> Colaboradores “faltantes” (sem pagamento esperado)</li>
+            <li class="flex items-center gap-2"><span class="text-slate-400">•</span> Pagamento “a mais” (acima do teto/regra)</li>
+            <li class="flex items-center gap-2"><span class="text-slate-400">•</span> Pagamento para desligados</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- KPI CARDS -->
+    <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5">
+        <div class="text-xs text-slate-400">Total OPS (previsto)</div>
+        <div id="kpiOps" class="text-2xl font-bold mt-1">R$ 0,00</div>
+        <div class="text-xs text-slate-500 mt-2">Somatório do valor esperado</div>
+      </div>
+
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5">
+        <div class="text-xs text-slate-400">Total processado (encontrado)</div>
+        <div id="kpiReal" class="text-2xl font-bold mt-1">R$ 0,00</div>
+        <div class="text-xs text-slate-500 mt-2">Somatório do valor encontrado</div>
+      </div>
+
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5">
+        <div class="text-xs text-slate-400">Divergências</div>
+        <div class="flex items-end justify-between gap-3">
+          <div>
+            <div id="kpiDivCount" class="text-2xl font-bold mt-1">0</div>
+            <div class="text-xs text-slate-500 mt-2">Linhas com diferença &gt; tolerância</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-slate-400">Impacto (abs.)</div>
+            <div id="kpiImpacto" class="text-lg font-semibold">R$ 0,00</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5">
+        <div class="text-xs text-slate-400">Alertas críticos</div>
+        <div class="flex items-end justify-between gap-3">
+          <div>
+            <div id="kpiCriticos" class="text-2xl font-bold mt-1">0</div>
+            <div class="text-xs text-slate-500 mt-2">Desligados, sem cadastro, duplicados</div>
+          </div>
+          <button onclick="scrollToSection('secCriticos')"
+            class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-xl border border-slate-600">
+            Ver
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAIN TABLES -->
+    <section class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+
+      <!-- Divergências -->
+      <div class="xl:col-span-2 bg-slate-800 border border-slate-700 rounded-2xl shadow overflow-hidden">
+        <div class="p-5 flex items-center justify-between gap-3">
+          <div>
+            <div class="text-lg font-bold">Divergências encontradas</div>
+            <div class="text-xs text-slate-400">RE, nome, esperado, encontrado, diferença e motivo</div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <label class="text-xs text-slate-400">Tolerância (R$)</label>
+            <input id="tolerancia" type="number" step="0.01" value="0.50"
+              class="w-28 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-500"/>
+            <button onclick="aplicarFiltro()"
+              class="bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold rounded-xl px-4 py-2 border border-slate-600">
+              Recalcular
+            </button>
+          </div>
+        </div>
+
+        <div class="max-h-[420px] overflow-auto soft-scroll sticky-head">
+          <table class="w-full text-sm">
+            <thead class="text-slate-300">
+              <tr class="border-b border-slate-700">
+                <th class="text-left p-3">RE</th>
+                <th class="text-left p-3">Nome</th>
+                <th class="text-right p-3">Esperado</th>
+                <th class="text-right p-3">Encontrado</th>
+                <th class="text-right p-3">Dif.</th>
+                <th class="text-left p-3">Motivo</th>
+              </tr>
+            </thead>
+            <tbody id="tbDivergencias" class="text-slate-200"></tbody>
+          </table>
+        </div>
+
+        <div class="p-4 border-t border-slate-700 bg-slate-900 flex flex-wrap gap-2 items-center justify-between">
+          <div class="text-xs text-slate-400">
+            Exemplo de validação: “Esperado x Encontrado”, com tolerância e motivo sugerido.
+          </div>
+          <div class="flex gap-2">
+            <button onclick="exportarJSON()"
+              class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-xl border border-slate-600">
+              Exportar JSON (mock)
+            </button>
+            <button onclick="imprimir()"
+              class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-xl border border-slate-600">
+              Imprimir
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resumo de risco -->
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5">
+        <div class="text-lg font-bold">Radar de risco</div>
+        <div class="text-xs text-slate-400">Pontuação simples (mock) por tipo de furo</div>
+
+        <div class="mt-4 space-y-3">
+          <div>
+            <div class="flex justify-between text-xs text-slate-400"><span>Pagamento para desligado</span><span id="riskDesligado">0%</span></div>
+            <div class="h-2 bg-slate-900 rounded-full border border-slate-700 overflow-hidden">
+              <div id="barDesligado" class="h-full bg-slate-200/40" style="width:0%"></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs text-slate-400"><span>Sem cadastro / RE inválido</span><span id="riskCadastro">0%</span></div>
+            <div class="h-2 bg-slate-900 rounded-full border border-slate-700 overflow-hidden">
+              <div id="barCadastro" class="h-full bg-slate-200/40" style="width:0%"></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs text-slate-400"><span>Duplicidade (CPF/benefício)</span><span id="riskDupe">0%</span></div>
+            <div class="h-2 bg-slate-900 rounded-full border border-slate-700 overflow-hidden">
+              <div id="barDupe" class="h-full bg-slate-200/40" style="width:0%"></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs text-slate-400"><span>Faltantes (sem pagamento esperado)</span><span id="riskFaltante">0%</span></div>
+            <div class="h-2 bg-slate-900 rounded-full border border-slate-700 overflow-hidden">
+              <div id="barFaltante" class="h-full bg-slate-200/40" style="width:0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-5 bg-slate-900 border border-slate-700 rounded-2xl p-4">
+          <div class="text-xs text-slate-400">Recomendação automática (mock)</div>
+          <div id="reco" class="mt-2 text-sm">
+            Aplique o período para gerar recomendações.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CRÍTICOS -->
+    <section id="secCriticos" class="bg-slate-800 border border-slate-700 rounded-2xl shadow overflow-hidden">
+      <div class="p-5">
+        <div class="text-lg font-bold">Alertas críticos</div>
+        <div class="text-xs text-slate-400">Furos típicos em auditoria de BPO financeiro</div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 p-5 pt-0">
+
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4">
+          <div class="flex items-center justify-between">
+            <div class="font-semibold">Pagamentos para desligados</div>
+            <span id="pillDesligados" class="text-xs px-2 py-1 rounded-full bg-slate-800 border border-slate-700">0</span>
+          </div>
+          <div class="mt-3 max-h-56 overflow-auto soft-scroll">
+            <ul id="listDesligados" class="text-sm space-y-2"></ul>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4">
+          <div class="flex items-center justify-between">
+            <div class="font-semibold">Sem cadastro (RE/CPF)</div>
+            <span id="pillSemCadastro" class="text-xs px-2 py-1 rounded-full bg-slate-800 border border-slate-700">0</span>
+          </div>
+          <div class="mt-3 max-h-56 overflow-auto soft-scroll">
+            <ul id="listSemCadastro" class="text-sm space-y-2"></ul>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4">
+          <div class="flex items-center justify-between">
+            <div class="font-semibold">Duplicidades suspeitas</div>
+            <span id="pillDupe" class="text-xs px-2 py-1 rounded-full bg-slate-800 border border-slate-700">0</span>
+          </div>
+          <div class="mt-3 max-h-56 overflow-auto soft-scroll">
+            <ul id="listDupe" class="text-sm space-y-2"></ul>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="p-5 pt-0">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4">
+          <div class="font-semibold">Faltantes no período (ex.: ativos sem pagamento esperado)</div>
+          <div class="text-xs text-slate-400 mt-1">Útil para capturar ausência de lançamentos / esquecidos</div>
+          <div class="mt-3 max-h-56 overflow-auto soft-scroll">
+            <table class="w-full text-sm">
+              <thead class="text-slate-300">
+                <tr class="border-b border-slate-700">
+                  <th class="text-left p-2">RE</th>
+                  <th class="text-left p-2">Nome</th>
+                  <th class="text-left p-2">Status</th>
+                  <th class="text-right p-2">Valor esperado</th>
+                  <th class="text-left p-2">Observação</th>
+                </tr>
+              </thead>
+              <tbody id="tbFaltantes"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="text-xs text-slate-500 px-2 pb-8">
+      <!-- Mock dashboard — pronto para plugar com FastAPI/Django: substitua <code class="text-slate-300">mockData()</code> por fetch do seu endpoint. -->
+    
+    RentUs BPO - 2025
+    </footer>
+  </main>
+
+  <script>
+    // ============= Helpers =============
+    const BRL = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+
+    function go(path){ window.location.href = path; }
+
+    function toggleMenu() {
+      const menu = document.getElementById("sideMenu");
+      const backdrop = document.getElementById("menuBackdrop");
+      menu.classList.toggle("open");
+      backdrop.style.display = menu.classList.contains("open") ? "block" : "none";
+    }
+
+    function scrollToSection(id){
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function setStatus(text, kind="neutral"){
+      const pill = document.getElementById("statusPill");
+      pill.textContent = text;
+      pill.className = "text-xs px-3 py-1 rounded-full border shadow";
+      if(kind === "ok") pill.classList.add("bg-emerald-900/40","border-emerald-700","text-emerald-200");
+      else if(kind === "warn") pill.classList.add("bg-amber-900/40","border-amber-700","text-amber-200");
+      else if(kind === "bad") pill.classList.add("bg-rose-900/40","border-rose-700","text-rose-200");
+      else pill.classList.add("bg-slate-700","border-slate-600","text-slate-200");
+    }
+
+    function toDate(str){
+      const [y,m,d] = (str||"").split("-").map(Number);
+      if(!y || !m || !d) return null;
+      return new Date(y, m-1, d);
+    }
+    function inRange(dateStr, start, end){
+      const dt = toDate(dateStr);
+      if(!dt || !start || !end) return false;
+      return dt >= start && dt <= end;
+    }
+    function safeNum(x){
+      const n = Number(x);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    // ============= Mock dataset (substituir pelo seu backend) =============
+    function mockData(){
+      // Ideia: "OPS esperado" vs "Processado/Encontrado"
+      // Campos: re, nome, esperado, encontrado, data, motivo_sugerido, status_colab, cpf_ok, cadastro_ok, dupe_key
+      return [
+        {re:"515412", nome:"VALQUIRIA MARIA DOS SANTOS REIS", esperado:394.44, encontrado:394.44, data:"2025-12-03", status:"ATIVO", cadastro_ok:true, cpf_ok:true, dupe_key:"515412|VR", motivo:"OK"},
+        {re:"515472", nome:"ELIANE TEREZA DA SILVA", esperado:74.08, encontrado:70.08, data:"2025-12-03", status:"ATIVO", cadastro_ok:true, cpf_ok:true, dupe_key:"515472|VR", motivo:"Diferença de base"},
+        {re:"516862", nome:"CAMILA DOS SANTOS SILVA", esperado:186.84, encontrado:0.00, data:"2025-12-03", status:"ATIVO", cadastro_ok:true, cpf_ok:true, dupe_key:"516862|VR", motivo:"Possível falta de lançamento"},
+        {re:"517182", nome:"LAIS INGRID PEREIRA COSTA", esperado:166.08, encontrado:166.58, data:"2025-12-03", status:"ATIVO", cadastro_ok:true, cpf_ok:true, dupe_key:"517182|VR", motivo:"Arredondamento/taxa"},
+        {re:"516462", nome:"ALESSANDRA DE SOUSA MOTA", esperado:207.60, encontrado:207.60, data:"2025-12-03", status:"ATIVO", cadastro_ok:true, cpf_ok:true, dupe_key:"516462|VR", motivo:"OK"},
+        {re:"000000", nome:"SEM CADASTRO / TERCEIRO", esperado:0.00, encontrado:120.00, data:"2025-12-04", status:"N/A", cadastro_ok:false, cpf_ok:false, dupe_key:"000000|VR", motivo:"Pagamento sem cadastro"},
+        {re:"515962", nome:"GILSON JOSE CONTI", esperado:269.88, encontrado:269.88, data:"2025-12-03", status:"ATIVO", cadastro_ok:true, cpf_ok:true, dupe_key:"515962|VR", motivo:"OK"},
+        {re:"516862", nome:"CAMILA DOS SANTOS SILVA", esperado:0.00, encontrado:186.84, data:"2025-12-03", status:"ATIVO", cadastro_ok:true, cpf_ok:true, dupe_key:"516862|VR", motivo:"Duplicidade (possível estorno/falha)"},
+        {re:"518888", nome:"COLABORADOR DESLIGADO", esperado:0.00, encontrado:320.00, data:"2025-12-02", status:"DEMITIDO", cadastro_ok:true, cpf_ok:true, dupe_key:"518888|VR", motivo:"Pagamento após demissão"},
+        {re:"519001", nome:"ATIVO SEM OPS", esperado:0.00, encontrado:0.00, data:"2025-12-03", status:"ATIVO", cadastro_ok:true, cpf_ok:true, dupe_key:"519001|VR", motivo:"Candidato a 'faltante'"},
+      ];
+    }
+
+    // "Base de colaboradores" (para achar faltantes): mock simples
+    function mockColaboradores(){
+      return [
+        {re:"515412", nome:"VALQUIRIA MARIA DOS SANTOS REIS", status:"ATIVO"},
+        {re:"515472", nome:"ELIANE TEREZA DA SILVA", status:"ATIVO"},
+        {re:"515962", nome:"GILSON JOSE CONTI", status:"ATIVO"},
+        {re:"516462", nome:"ALESSANDRA DE SOUSA MOTA", status:"ATIVO"},
+        {re:"516862", nome:"CAMILA DOS SANTOS SILVA", status:"ATIVO"},
+        {re:"517182", nome:"LAIS INGRID PEREIRA COSTA", status:"ATIVO"},
+        {re:"519001", nome:"ATIVO SEM OPS", status:"ATIVO"},
+        {re:"518888", nome:"COLABORADOR DESLIGADO", status:"DEMITIDO"},
+        {re:"519999", nome:"ATIVO FALTANTE TOTAL", status:"ATIVO"},
+      ];
+    }
+
+    // ============= Render =============
+    function aplicarFiltro(){
+      const dtInicio = toDate(document.getElementById("dtInicio").value);
+      const dtFim = toDate(document.getElementById("dtFim").value);
+      const tol = Math.max(0, safeNum(document.getElementById("tolerancia").value));
+
+      if(!dtInicio || !dtFim){
+        setStatus("Selecione as duas datas", "warn");
+        return;
+      }
+      if(dtFim < dtInicio){
+        setStatus("Data fim menor que início", "warn");
+        return;
+      }
+
+      localStorage.setItem("dash_dtInicio", document.getElementById("dtInicio").value);
+      localStorage.setItem("dash_dtFim", document.getElementById("dtFim").value);
+      localStorage.setItem("dash_tol", String(tol));
+
+      const data = mockData().filter(x => inRange(x.data, dtInicio, dtFim));
+
+      // totais
+      const totalOps = data.reduce((s,x)=> s + safeNum(x.esperado), 0);
+      const totalReal = data.reduce((s,x)=> s + safeNum(x.encontrado), 0);
+
+      // divergências
+      const divergencias = data
+        .map(x => ({...x, dif: safeNum(x.encontrado) - safeNum(x.esperado)}))
+        .filter(x => Math.abs(x.dif) > tol);
+
+      const impacto = divergencias.reduce((s,x)=> s + Math.abs(x.dif), 0);
+
+      // críticos: desligados, sem cadastro, duplicidades
+      const desligados = data.filter(x => (x.status || "").toUpperCase().includes("DEMIT"));
+      const semCadastro = data.filter(x => !x.cadastro_ok && safeNum(x.encontrado) > 0);
+
+      // duplicidades por dupe_key (conta ocorrências)
+      const mapCount = new Map();
+      data.forEach(x => {
+        const k = x.dupe_key || `${x.re}|?`;
+        mapCount.set(k, (mapCount.get(k)||0)+1);
+      });
+      const duplicados = data.filter(x => {
+        const k = x.dupe_key || `${x.re}|?`;
+        return (mapCount.get(k)||0) > 1;
+      });
+
+      // faltantes: ativos na base que não aparecem com valor esperado > 0 no período
+      const base = mockColaboradores();
+      const esperadoPorRE = new Map();
+      data.forEach(x => esperadoPorRE.set(x.re, (esperadoPorRE.get(x.re)||0) + safeNum(x.esperado)));
+
+      const faltantes = base
+        .filter(c => (c.status || "").toUpperCase() === "ATIVO")
+        .filter(c => (esperadoPorRE.get(c.re)||0) === 0)
+        .map(c => ({
+          re: c.re,
+          nome: c.nome,
+          status: c.status,
+          valor_esperado: 0,
+          obs: "Ativo sem OPS no período (validar origem / admissão / regra)"
+        }));
+
+      // KPIs
+      document.getElementById("kpiOps").textContent = BRL.format(totalOps);
+      document.getElementById("kpiReal").textContent = BRL.format(totalReal);
+      document.getElementById("kpiDivCount").textContent = String(divergencias.length);
+      document.getElementById("kpiImpacto").textContent = BRL.format(impacto);
+
+      const criticosCount = desligados.length + semCadastro.length + (duplicados.length ? 1 : 0); // dupe agrupa
+      document.getElementById("kpiCriticos").textContent = String(criticosCount);
+
+      // status pill (bem simples)
+      if(criticosCount === 0 && divergencias.length === 0) setStatus("Sem alertas no período", "ok");
+      else if(criticosCount > 0) setStatus("Atenção: alertas críticos", "bad");
+      else setStatus("Divergências encontradas", "warn");
+
+      // tabela divergências
+      const tb = document.getElementById("tbDivergencias");
+      tb.innerHTML = "";
+      divergencias
+        .sort((a,b)=> Math.abs(b.dif) - Math.abs(a.dif))
+        .forEach(x => {
+          const isBad = Math.abs(x.dif) > (tol*10);
+          const tr = document.createElement("tr");
+          tr.className = "border-b border-slate-700/60 hover:bg-slate-700/30";
+          tr.innerHTML = `
+            <td class="p-3 whitespace-nowrap">${escapeHtml(x.re)}</td>
+            <td class="p-3">${escapeHtml(x.nome)}</td>
+            <td class="p-3 text-right">${BRL.format(safeNum(x.esperado))}</td>
+            <td class="p-3 text-right">${BRL.format(safeNum(x.encontrado))}</td>
+            <td class="p-3 text-right ${isBad ? "text-rose-300" : "text-amber-200"}">${BRL.format(safeNum(x.dif))}</td>
+            <td class="p-3 text-slate-300">${escapeHtml(sugerirMotivo(x))}</td>
+          `;
+          tb.appendChild(tr);
+        });
+
+      if(divergencias.length === 0){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="6" class="p-6 text-center text-slate-400">Nenhuma divergência acima da tolerância.</td>`;
+        tb.appendChild(tr);
+      }
+
+      // críticos lists
+      fillList("listDesligados", desligados, (x)=> `${x.re} — ${x.nome} • ${BRL.format(safeNum(x.encontrado))} (${x.data})`);
+      fillList("listSemCadastro", semCadastro, (x)=> `${x.re} — ${x.nome} • ${BRL.format(safeNum(x.encontrado))} (${x.data})`);
+
+      // duplicados: agrupa por key
+      const dupeGroups = new Map();
+      duplicados.forEach(x => {
+        const k = x.dupe_key || `${x.re}|?`;
+        const arr = dupeGroups.get(k) || [];
+        arr.push(x);
+        dupeGroups.set(k, arr);
+      });
+      const dupeItems = [...dupeGroups.entries()].map(([k, arr]) => ({
+        key: k,
+        re: arr[0].re,
+        nome: arr[0].nome,
+        count: arr.length,
+        total: arr.reduce((s,x)=> s + safeNum(x.encontrado), 0),
+        datas: arr.map(x => x.data).join(", ")
+      }));
+      fillList("listDupe", dupeItems, (x)=> `${x.re} — ${x.nome} • ${x.count}x (${BRL.format(x.total)}) • ${x.datas}`);
+
+      setPill("pillDesligados", desligados.length);
+      setPill("pillSemCadastro", semCadastro.length);
+      setPill("pillDupe", dupeItems.length);
+
+      // faltantes table
+      const tbF = document.getElementById("tbFaltantes");
+      tbF.innerHTML = "";
+      faltantes.forEach(x => {
+        const tr = document.createElement("tr");
+        tr.className = "border-b border-slate-700/60 hover:bg-slate-700/30";
+        tr.innerHTML = `
+          <td class="p-2 whitespace-nowrap">${escapeHtml(x.re)}</td>
+          <td class="p-2">${escapeHtml(x.nome)}</td>
+          <td class="p-2 text-slate-300">${escapeHtml(x.status)}</td>
+          <td class="p-2 text-right">${BRL.format(safeNum(x.valor_esperado))}</td>
+          <td class="p-2 text-slate-300">${escapeHtml(x.obs)}</td>
+        `;
+        tbF.appendChild(tr);
+      });
+      if(faltantes.length === 0){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="5" class="p-5 text-center text-slate-400">Nenhum faltante sugerido no período.</td>`;
+        tbF.appendChild(tr);
+      }
+
+      // radar (percentuais simples)
+      const totalLinhas = Math.max(1, data.length);
+      setRisk("Desligado", Math.round((desligados.length/totalLinhas)*100));
+      setRisk("Cadastro", Math.round((semCadastro.length/totalLinhas)*100));
+      setRisk("Dupe", Math.round((dupeItems.length/totalLinhas)*100));
+      setRisk("Faltante", Math.min(100, Math.round((faltantes.length/Math.max(1, base.length))*100)));
+
+      // recomendação (mock)
+      document.getElementById("reco").innerHTML = buildRecomendacao({
+        dtInicio, dtFim, divergencias, desligados, semCadastro, dupeItems, faltantes, totalOps, totalReal, impacto, tol
+      });
+    }
+
+    function sugerirMotivo(x){
+      const esp = safeNum(x.esperado);
+      const enc = safeNum(x.encontrado);
+      const dif = enc - esp;
+
+      if(!x.cadastro_ok && enc > 0) return "Pagamento sem cadastro (RE/CPF não encontrado)";
+      if((x.status||"").toUpperCase().includes("DEMIT") && enc > 0) return "Pagamento para desligado (validar datas/estorno)";
+      if(esp > 0 && enc === 0) return "Possível ausência de lançamento / bloqueio";
+      if(esp === 0 && enc > 0) return "Pagamento não previsto na OPS (validar regra/centro de custo)";
+      if(Math.abs(dif) <= 2) return "Arredondamento, taxa ou diferença de base";
+      if(dif > 0) return "Pagamento acima do esperado (validar teto/regra/duplicidade)";
+      return "Pagamento abaixo do esperado (validar proporcionalidade/faltas)";
+    }
+
+    function fillList(id, items, fmt){
+      const ul = document.getElementById(id);
+      ul.innerHTML = "";
+      if(!items.length){
+        ul.innerHTML = `<li class="text-slate-400">Nenhum item.</li>`;
+        return;
+      }
+      items.slice(0, 12).forEach(x => {
+        const li = document.createElement("li");
+        li.className = "flex items-start gap-2";
+        li.innerHTML = `<span class="text-slate-400 mt-0.5">•</span><span>${escapeHtml(fmt(x))}</span>`;
+        ul.appendChild(li);
+      });
+      if(items.length > 12){
+        const li = document.createElement("li");
+        li.className = "text-xs text-slate-400";
+        li.textContent = `+${items.length-12} itens...`;
+        ul.appendChild(li);
+      }
+    }
+
+    function setPill(id, n){
+      const el = document.getElementById(id);
+      el.textContent = String(n);
+      el.className = "text-xs px-2 py-1 rounded-full border";
+      if(n === 0) el.classList.add("bg-emerald-900/30","border-emerald-700","text-emerald-200");
+      else el.classList.add("bg-rose-900/30","border-rose-700","text-rose-200");
+    }
+
+    function setRisk(key, pct){
+      document.getElementById("risk"+key).textContent = pct + "%";
+      document.getElementById("bar"+key).style.width = Math.max(0, Math.min(100, pct)) + "%";
+    }
+
+    function buildRecomendacao(ctx){
+      const {dtInicio, dtFim, divergencias, desligados, semCadastro, dupeItems, faltantes, totalOps, totalReal, impacto, tol} = ctx;
+      const periodo = `${dtInicio.toLocaleDateString("pt-BR")} a ${dtFim.toLocaleDateString("pt-BR")}`;
+      const lines = [];
+
+      lines.push(`<div class="text-slate-200"><span class="text-slate-400">Período:</span> <b>${periodo}</b></div>`);
+      lines.push(`<div class="text-slate-200"><span class="text-slate-400">Conciliação:</span> OPS ${BRL.format(totalOps)} vs Encontrado ${BRL.format(totalReal)} • Impacto abs. ${BRL.format(impacto)}</div>`);
+
+      if(desligados.length) lines.push(`• <b>Revisar pagamentos para desligados</b> (${desligados.length}). Confirmar data de demissão, estorno e elegibilidade.`);
+      if(semCadastro.length) lines.push(`• <b>Bloquear itens sem cadastro</b> (${semCadastro.length}). Exigir RE/CPF válido e centro de custo antes de pagar.`);
+      if(dupeItems.length) lines.push(`• <b>Investigar duplicidades</b> (${dupeItems.length} grupos). Conferir chaves RE+benefício+competência e regras de reprocessamento.`);
+      if(divergencias.length) lines.push(`• <b>Tratar divergências</b> (${divergencias.length}) acima da tolerância (R$ ${tol.toFixed(2)}). Priorize maiores diferenças.`);
+
+      if(!divergencias.length && !desligados.length && !semCadastro.length && !dupeItems.length){
+        lines.push(`• Sem pontos críticos no mock. Próximo passo: cruzar com “Situação” (ativo/afastado) e “Ficha Presença” para validar proporcionalidade.`);
+      }
+
+      if(faltantes.length){
+        lines.push(`• <b>Faltantes sugeridos</b>: ${faltantes.length} ativos sem OPS no período. Validar se faltou lançamento, admissão recente ou regra de elegibilidade.`);
+      }
+
+      return `<div class="text-sm space-y-1"><div>${lines.join("</div><div>")}</div></div>`;
+    }
+
+    function exportarJSON(){
+      const payload = {
+        dtInicio: document.getElementById("dtInicio").value,
+        dtFim: document.getElementById("dtFim").value,
+        tolerancia: safeNum(document.getElementById("tolerancia").value),
+        dados: mockData()
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "dashboard_mock.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function imprimir(){ window.print(); }
+
+    function escapeHtml(str){
+      return String(str ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    // Simula o fluxo do botão de ficha presença (mock)
+    function simularFichaPresenca(){
+      const status = document.getElementById("fichaStatus");
+      const fileInput = document.getElementById("fichaUpload");
+      if(!fileInput.files.length) return;
+
+      status.textContent = "⏳ Iniciando processamento...";
+      const etapas = [
+        "Lendo arquivo...",
+        "Validando cabeçalhos...",
+        "Normalizando datas...",
+        "Cruzando presença x benefício...",
+        "Gerando lista de alertas...",
+        "Finalizando..."
+      ];
+      let i = 0;
+      const interval = setInterval(() => {
+        status.textContent = "⏳ " + etapas[i];
+        i++;
+        if(i >= etapas.length){
+          clearInterval(interval);
+          status.textContent = "✅ Simulação concluída (mock). Integre com /ficha/processar no backend.";
+        }
+      }, 700);
+    }
+
+    function resetar(){
+      localStorage.removeItem("dash_dtInicio");
+      localStorage.removeItem("dash_dtFim");
+      localStorage.removeItem("dash_tol");
+      const today = new Date();
+      const start = new Date(today.getFullYear(), today.getMonth(), 1);
+      document.getElementById("dtInicio").value = toISO(start);
+      document.getElementById("dtFim").value = toISO(today);
+      document.getElementById("tolerancia").value = "0.50";
+      setStatus("Pronto para validar", "neutral");
+      aplicarFiltro();
+    }
+
+    function toISO(dt){
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth()+1).padStart(2,"0");
+      const d = String(dt.getDate()).padStart(2,"0");
+      return `${y}-${m}-${d}`;
+    }
+
+    // ============= Init =============
+    (function init(){
+      const savedIni = localStorage.getItem("dash_dtInicio");
+      const savedFim = localStorage.getItem("dash_dtFim");
+      const savedTol = localStorage.getItem("dash_tol");
+
+      const today = new Date();
+      const start = new Date(today.getFullYear(), today.getMonth(), 1);
+
+      document.getElementById("dtInicio").value = savedIni || toISO(start);
+      document.getElementById("dtFim").value = savedFim || toISO(today);
+      if(savedTol) document.getElementById("tolerancia").value = savedTol;
+
+      aplicarFiltro();
+    })();
+  </script>
+</body>
+</html>

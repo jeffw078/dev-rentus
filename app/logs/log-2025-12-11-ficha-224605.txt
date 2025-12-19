@@ -1,0 +1,8 @@
+[INFO] Iniciando análise de Ficha Presença
+[INFO] Arquivo salvo: C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\app\uploads\FP_INPUT.xlsx
+Traceback (most recent call last):
+  File "C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\app\main.py", line 145, in ficha_processar
+    importlib.reload(sys.modules["projects.LocalizaSituacao"])
+                     ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'projects.LocalizaSituacao'
+

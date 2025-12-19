@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <title>Rentus • Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-900 text-slate-200 min-h-screen flex items-center justify-center">
+
+  <div class="w-full max-w-md bg-slate-800 border border-slate-700
+              rounded-2xl shadow-xl p-8 space-y-6">
+
+    <!-- LOGO -->
+    <div class="flex flex-col items-center gap-4">
+      <!-- Se tiver logo, substitua o texto por <img> -->
+      <!-- <img src="/static/images/logo.png" class="h-20"> -->
+ <img src="/static/images/logo.png" alt="Rentus" class="h-50">
+      <span class="text-slate-400 text-sm">
+        Seja bem vindo(a)
+      </span>
+    </div>
+
+    <!-- FORM -->
+    <div class="space-y-4">
+
+      <div>
+        <label class="text-sm text-slate-300">Usuário</label>
+       <input
+  id="usuario"
+  type="text"
+  value="rentus"
+  class="w-full mt-1 px-4 py-2 rounded-lg
+         bg-slate-900 border border-slate-700
+         focus:outline-none focus:ring-2 focus:ring-emerald-600"
+>
+
+<input
+  id="senha"
+  type="password"
+  value="rentus"
+  class="w-full mt-1 px-4 py-2 rounded-lg
+         bg-slate-900 border border-slate-700
+         focus:outline-none focus:ring-2 focus:ring-emerald-600"
+>
+      </div>
+
+      <button
+        onclick="login()"
+        class="w-full bg-emerald-600 hover:bg-emerald-500
+               text-white py-2 rounded-lg font-medium shadow transition"
+      >
+        Entrar
+      </button>
+
+      <div
+        id="erro"
+        class="hidden text-red-400 text-sm text-center"
+      >
+        Usuário ou senha inválidos
+      </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <div class="text-center text-xs text-slate-500 pt-2">
+      Rentus Análises • Acesso interno
+    </div>
+
+  </div>
+
+<script>
+function login() {
+  const usuario = document.getElementById("usuario").value;
+  const senha = document.getElementById("senha").value;
+  const erro = document.getElementById("erro");
+
+  if (usuario === "rentus" && senha === "rentus") {
+    window.location.href = "/index"; // ou /dashboard
+  } else {
+    erro.classList.remove("hidden");
+  }
+}
+</script>
+
+</body>
+</html>

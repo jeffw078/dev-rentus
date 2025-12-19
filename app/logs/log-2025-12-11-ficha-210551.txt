@@ -1,0 +1,6 @@
+[INFO] ======================================
+[INFO] Iniciando análise de ficha presença
+[INFO] ======================================
+[INFO] Salvando ficha presença em C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\app\uploads\FP.xlsx...
+[INFO] Executando LocalizaSituacao (reload)...
+[ERROR] Arquivo gerado não encontrado: C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\app\uploads\FP_resultado_clientes.xlsx

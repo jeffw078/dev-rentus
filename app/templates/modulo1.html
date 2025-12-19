@@ -1,0 +1,265 @@
+<!-- app/templates/index.html -->
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sistema de Análises v1.3</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-900 text-slate-200 min-h-screen flex flex-col">
+
+  <!-- HEADER -->
+ <header class="w-full flex items-center justify-center py-6 bg-slate-800 border-b border-slate-700 shadow-sm">
+  <div class="flex items-center gap-3">
+    <img src="/static/images/logo.png" alt="Rentus" class="h-10">
+    <span class="text-2xl font-bold text-slate-200 tracking-tight">
+      Rentus Análises - VA - VR - VT - CB v1.3
+    </span>
+  </div>
+  <button
+      onclick="window.location.href='/'"
+      class="px-4 py-2 rounded-full text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 shadow"
+    >
+      Voltar
+    </button>
+</header>
+
+
+
+  <!-- MAIN CONTENT -->
+  <main class="flex-1 flex flex-col items-center pt-8 px-4 pb-8">
+
+    <!-- UPLOAD SECTION -->
+    <section class="w-full max-w-4xl bg-slate-800 border border-slate-700 rounded-2xl shadow p-6 mb-6">
+
+      <h2 class="text-lg font-semibold mb-2">Instruções</h2>
+      <p class="text-sm text-slate-400 mb-4">
+        Envie todos os arquivos obrigatórios. O botão
+        <strong class="text-green-400">Gerar Análise</strong>
+        será habilitado após todos os uploads.
+      </p>
+
+      <form id="uploadForm" class="space-y-5">
+
+        <!-- GRID DE UPLOADS -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          <!-- OPS -->
+          <div>
+            <label class="block text-sm font-medium mb-1">OPS.xlsx</label>
+            <div class="flex items-center gap-3 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">
+              <label for="OPS_input"
+                class="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white cursor-pointer shadow">
+                Escolher arquivo
+              </label>
+              <span id="OPS_filename" class="text-slate-400 text-sm truncate">
+                Nenhum arquivo escolhido
+              </span>
+              <input id="OPS_input" name="OPS" type="file" accept=".xls,.xlsx" class="hidden" required />
+            </div>
+          </div>
+
+          <!-- demitidos -->
+          <div>
+            <label class="block text-sm font-medium mb-1">demitidos.xls</label>
+            <div class="flex items-center gap-3 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">
+              <label for="demitidos_input"
+                class="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white cursor-pointer shadow">
+                Escolher arquivo
+              </label>
+              <span id="demitidos_filename" class="text-slate-400 text-sm truncate">
+                Nenhum arquivo escolhido
+              </span>
+              <input id="demitidos_input" name="demitidos" type="file" accept=".xls,.xlsx" class="hidden" required />
+            </div>
+          </div>
+
+          <!-- AVISO PREVIO -->
+          <div>
+            <label class="block text-sm font-medium mb-1">AVISO_PREVIO.xls</label>
+            <div class="flex items-center gap-3 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">
+              <label for="AVISO_PREVIO_input"
+                class="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white cursor-pointer shadow">
+                Escolher arquivo
+              </label>
+              <span id="AVISO_PREVIO_filename" class="text-slate-400 text-sm truncate">
+                Nenhum arquivo escolhido
+              </span>
+              <input id="AVISO_PREVIO_input" name="AVISO_PREVIO" type="file" accept=".xls,.xlsx" class="hidden" required />
+            </div>
+          </div>
+
+          <!-- hk_avulso -->
+          <div>
+            <label class="block text-sm font-medium mb-1">hk_avulso.xls</label>
+            <div class="flex items-center gap-3 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">
+              <label for="hk_avulso_input"
+                class="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white cursor-pointer shadow">
+                Escolher arquivo
+              </label>
+              <span id="hk_avulso_filename" class="text-slate-400 text-sm truncate">
+                Nenhum arquivo escolhido
+              </span>
+              <input id="hk_avulso_input" name="hk_avulso" type="file" accept=".xls,.xlsx" class="hidden" required />
+            </div>
+          </div>
+
+          <!-- fp -->
+          <div>
+            <label class="block text-sm font-medium mb-1">fp.xlsx</label>
+            <div class="flex items-center gap-3 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">
+              <label for="fp_input"
+                class="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white cursor-pointer shadow">
+                Escolher arquivo
+              </label>
+              <span id="fp_filename" class="text-slate-400 text-sm truncate">
+                Nenhum arquivo escolhido
+              </span>
+              <input id="fp_input" name="fp" type="file" accept=".xls,.xlsx" class="hidden" required />
+            </div>
+          </div>
+
+          <!-- situacao -->
+          <div>
+            <label class="block text-sm font-medium mb-1">situação.xlsx</label>
+            <div class="flex items-center gap-3 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">
+              <label for="situacao_input"
+                class="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white cursor-pointer shadow">
+                Escolher arquivo
+              </label>
+              <span id="situacao_filename" class="text-slate-400 text-sm truncate">
+                Nenhum arquivo escolhido
+              </span>
+              <input id="situacao_input" name="situacao" type="file" accept=".xls,.xlsx" class="hidden" required />
+            </div>
+          </div>
+
+        </div>
+
+        <!-- BOTÃO GERAR -->
+        <div class="pt-4">
+          <button
+            id="processBtn"
+            type="submit"
+            disabled
+            class="px-6 py-2.5 rounded-full bg-green-600 text-white text-sm font-semibold shadow disabled:bg-slate-600 disabled:cursor-not-allowed hover:bg-green-500 transition"
+          >
+            Gerar Análise
+          </button>
+
+          <!-- SPINNER -->
+          <div id="spinner" class="hidden inline-flex items-center gap-2 ml-4 text-sm text-slate-400">
+            <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10"
+                      stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            </svg>
+            Processando...
+          </div>
+
+          <!-- LINK DOWNLOAD -->
+          <a id="downloadLink" href="#"
+             class="hidden text-sm font-medium text-green-400 hover:text-green-300 ml-4">
+            Baixar arquivo gerado
+          </a>
+        </div>
+
+      </form>
+
+    </section>
+
+    <!-- LOG PANEL -->
+    <section class="w-full max-w-4xl bg-slate-800 border border-slate-700 rounded-2xl shadow p-6">
+      <h2 class="text-lg font-semibold mb-2">Logs de processamento</h2>
+
+      <div id="logsPanel"
+           class="mt-2 text-xs font-mono bg-slate-900 text-slate-300 rounded-xl p-3 h-64 overflow-auto border border-slate-700">
+        <div class="text-slate-500">Aguardando processamento...</div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- SCRIPT PARA MOSTRAR NOME DOS ARQUIVOS -->
+  <script>
+    function bindFileInput(idBase) {
+      const input = document.getElementById(idBase + "_input");
+      const text = document.getElementById(idBase + "_filename");
+
+      input.addEventListener("change", () => {
+        if (input.files.length > 0) {
+          text.textContent = input.files[0].name;
+        } else {
+          text.textContent = "Nenhum arquivo escolhido";
+        }
+      });
+    }
+
+    ["OPS", "demitidos", "AVISO_PREVIO", "hk_avulso", "fp", "situacao"]
+      .forEach(bindFileInput);
+
+
+    const form = document.getElementById('uploadForm');
+    const processBtn = document.getElementById('processBtn');
+    const spinner = document.getElementById('spinner');
+    const logsPanel = document.getElementById('logsPanel');
+    const downloadLink = document.getElementById('downloadLink');
+
+    const fileInputs = form.querySelectorAll('input[type=\"file\"]');
+    fileInputs.forEach(input => {
+      input.addEventListener('change', () => {
+        const allFilled = Array.from(fileInputs).every(i => i.files.length > 0);
+        processBtn.disabled = !allFilled;
+      });
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      logsPanel.innerHTML = '<div class="text-slate-500">Iniciando processamento...</div>';
+      spinner.classList.remove('hidden');
+      processBtn.disabled = true;
+      downloadLink.classList.add('hidden');
+
+      const formData = new FormData(form);
+
+      try {
+        const res = await fetch('/modulo1/process', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await res.json();
+
+        logsPanel.innerHTML = '';
+        (data.logs || []).forEach(line => {
+          const div = document.createElement('div');
+          div.textContent = line;
+          logsPanel.appendChild(div);
+        });
+
+        if (data.success) {
+          downloadLink.href = data.download_url;
+          downloadLink.classList.remove('hidden');
+        } else if (data.error) {
+          const div = document.createElement('div');
+          div.className = 'text-red-400 mt-2';
+          div.textContent = `Erro: ${data.error}`;
+          logsPanel.appendChild(div);
+        }
+
+      } catch (err) {
+        logsPanel.innerHTML = '<div class="text-red-400">Erro inesperado ao comunicar com o servidor.</div>';
+        console.error(err);
+
+      } finally {
+        spinner.classList.add('hidden');
+        processBtn.disabled = false;
+      }
+    });
+  </script>
+
+</body>
+</html>

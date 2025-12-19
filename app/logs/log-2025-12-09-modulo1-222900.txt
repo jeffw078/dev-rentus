@@ -1,0 +1,34 @@
+[INFO] ======================================
+[INFO] Iniciando processamento MÓDULO 1
+[INFO] ======================================
+[INFO] Salvando OPS.xlsx em C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\app\uploads\OPS.xlsx...
+[INFO] Salvando demitidos.xls em C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\app\uploads\demitidos.xls...
+[INFO] Salvando AVISO_PREVIO.xls em C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\app\uploads\AVISO_PREVIO.xls...
+[INFO] Salvando hk_avulso.xls em C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\app\uploads\hk_avulso.xls...
+[INFO] Salvando fp.xlsx em C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\app\uploads\fp.xlsx...
+[INFO] Salvando situacao.xlsx em C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\app\uploads\situacao.xlsx...
+[ERROR] Erro inesperado no módulo 1:
+Traceback (most recent call last):
+  File "C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\projects\modulo1\Modulo1.py", line 36, in read_excel_safe
+    return pd.read_excel(path)
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\io\excel\_base.py", line 495, in read_excel
+    io = ExcelFile(
+         ^^^^^^^^^^
+  File "C:\Users\Jefferson\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\io\excel\_base.py", line 1554, in __init__
+    raise ValueError(
+ValueError: Excel file format cannot be determined, you must specify an engine manually.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\app\main.py", line 120, in modulo1_process
+    output_file, process_logs = process_modulo1(
+                                ^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\projects\modulo1\Modulo1.py", line 95, in process_modulo1
+    ops_df = read_excel_safe(ops_path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\projects\modulo1\Modulo1.py", line 38, in read_excel_safe
+    raise ValueError(f"Erro ao ler arquivo {path}: {e}")
+ValueError: Erro ao ler arquivo C:\Users\Jefferson\Desktop\Rentus\RENTUS ANALYZER\app\uploads\OPS.xlsx: Excel file format cannot be determined, you must specify an engine manually.
+

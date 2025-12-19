@@ -1,0 +1,7 @@
+[INFO] Iniciando processamento — Módulo 1
+[INFO] Arquivo salvo: C:\Users\Jefferson\Desktop\Rentus\ATUAL\app\uploads\OPS.xlsx
+[INFO] Arquivo salvo: C:\Users\Jefferson\Desktop\Rentus\ATUAL\app\uploads\demitidos.xls
+[INFO] Arquivo salvo: C:\Users\Jefferson\Desktop\Rentus\ATUAL\app\uploads\AVISO_PREVIO.xls
+[INFO] Arquivo salvo: C:\Users\Jefferson\Desktop\Rentus\ATUAL\app\uploads\hk_avulso.xlsx
+[INFO] Arquivo salvo: C:\Users\Jefferson\Desktop\Rentus\ATUAL\app\uploads\fp.xlsx
+[INFO] Arquivo salvo: C:\Users\Jefferson\Desktop\Rentus\ATUAL\app\uploads\situacao.xlsx

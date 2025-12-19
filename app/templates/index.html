@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <title>Rentus Análises</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    /* Sidebar overlay */
+    #sideMenu {
+      position: fixed;
+      left: 0;
+      top: 0;
+      height: 100vh;
+      width: 0;                           /* começa fechado */
+      background: #1e293b;                /* slate-800 */
+      overflow-x: hidden;
+      transition: width 0.25s ease-in-out;
+      z-index: 9999;
+      padding: 0;                         /* evita empurrar conteúdo antes de abrir */
+    }
+
+    #sideMenu.open {
+      width: 350px;                       /* menu aberto */
+      padding: 24px;
+    }
+
+    /* Backdrop */
+    #menuBackdrop {
+      display: none;
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.4);
+      z-index: 9990;
+    }
+
+    /* Tooltip */
+    .tooltip:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      background: #000;
+      color: #fff;
+      padding: 6px 10px;
+      font-size: 12px;
+      border-radius: 6px;
+      top: 110%;
+      left: 0;
+      white-space: nowrap;
+      z-index: 99999;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-900 text-slate-200 min-h-screen flex flex-col">
+
+  <!-- BACKDROP -->
+  <div id="menuBackdrop" onclick="toggleMenu()"></div>
+
+  <!-- HEADER -->
+  <header class="w-full flex items-center justify-start gap-4 py-4 px-6 bg-slate-800 border-b border-slate-700 shadow-sm">
+
+
+    <!-- Botão do menu -->
+    <button onclick="toggleMenu()" class="text-2xl select-none">☰</button>
+
+    <!-- Logo à esquerda -->
+    <div class="flex items-center gap-3">
+      <img src="/static/images/logo.png" alt="Rentus" class="h-10">
+      <span class="text-xl font-bold">Rentus Análises</span>
+    </div>
+  </header>
+
+  <!-- MENU LATERAL -->
+  <aside id="sideMenu">
+
+    <button onclick="toggleMenu()" class="text-2xl mb-6">✕</button>
+
+    <h2 class="text-lg font-bold mb-4">Ferramentas</h2>
+
+    <!-- Botão Ficha Presença -->
+    <label class="tooltip cursor-pointer flex items-center gap-3 bg-slate-700 hover:bg-slate-600 px-4 py-3 rounded-lg transition relative"
+           data-tip="Clique, selecione o arquivo e aguarde a conversão">
+      <input type="file" id="fichaUpload" class="hidden" accept=".xlsx,.xls" onchange="enviarFichaPresenca()">
+      📄 Análise de Ficha Presença
+    </label>
+
+    <div id="fichaStatus" class="mt-4 text-sm text-slate-300"></div>
+  </aside>
+
+  <!-- GRID DE MÓDULOS (SEU LAYOUT ORIGINAL, SEM ALTERAR NADA) -->
+  <main class="flex-1 p-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
+      <!-- EXEMPLO DO PRIMEIRO CARD — OS OUTROS 15 ESTÃO ABAIXO -->
+       <button onclick="window.location.href='/modulo1';"
+        class="module-card bg-slate-800 border border-slate-700 rounded-2xl shadow hover:shadow-lg
+               transition-all px-5 py-6 text-left hover:bg-slate-700/50">
+        <span class="text-sm text-sky-400 font-medium">MÓDULO 1</span>
+        <span class="text-lg font-semibold block mt-2">VR - VA - CESTA</span>
+        <span class="text-sm text-slate-400 block mt-2">Análise completa de benefícios</span>
+      </button>
+
+      <!-- MÓDULO 2 – Suprimentos  -->
+      <button
+  data-name="Suprimentos"
+  onclick="window.location.href='/modulo2';"
+  class="module-card bg-slate-800 border border-slate-700 rounded-2xl shadow hover:shadow-lg
+         transition-all px-5 py-6 text-left flex flex-col justify-between hover:bg-slate-700/50"
+>
+  <span class="text-sm text-sky-400 font-medium mb-1">MÓDULO 2</span>
+  <span class="text-lg font-semibold">Suprimentos</span>
+  <br>
+  <span class="text-sm text-slate-400 mt-2">Suprimentos</span>
+</button>
+
+
+<!-- MÓDULO 3 – Férias Cheque -->
+<button
+  data-name="Férias Cheque"
+  onclick="window.location.href='/modulo3';"
+  class="module-card bg-slate-800 border border-slate-700 rounded-2xl shadow hover:shadow-lg
+         transition-all px-5 py-6 text-left flex flex-col justify-between hover:bg-slate-700/50"
+>
+  <span class="text-sm text-sky-400 font-medium mb-1">MÓDULO 3</span>
+  <span class="text-lg font-semibold">Férias Cheque</span>
+  <br>
+  <span class="text-sm text-slate-400 mt-2">Férias Cheque</span>
+</button>
+
+<!-- MÓDULO 4 – Seguro de vida -->
+<button
+  data-name="Seguro de vida"
+  onclick="window.location.href='/modulo4';"
+  class="module-card bg-slate-800 border border-slate-700 rounded-2xl shadow hover:shadow-lg
+         transition-all px-5 py-6 text-left flex flex-col justify-between hover:bg-slate-700/50"
+>
+  <span class="text-sm text-sky-400 font-medium mb-1">MÓDULO 4</span>
+  <span class="text-lg font-semibold">Seguro de vida</span>
+  <br>
+  <span class="text-sm text-slate-400 mt-2">Seguro de vida</span>
+</button>
+
+<!-- MÓDULO 5 – 13º salário -->
+<button
+  data-name="13º salário"
+  onclick="window.location.href='/modulo5';"
+  class="module-card bg-slate-800 border border-slate-700 rounded-2xl shadow hover:shadow-lg
+         transition-all px-5 py-6 text-left flex flex-col justify-between hover:bg-slate-700/50"
+>
+  <span class="text-sm text-sky-400 font-medium mb-1">MÓDULO 5</span>
+  <span class="text-lg font-semibold">13º salário</span>
+  <br>
+  <span class="text-sm text-slate-400 mt-2">13º salário</span>
+</button>
+
+<!-- MÓDULO 6 – PLR -->
+<button
+  data-name="PLR"
+  onclick="window.location.href='/modulo6';"
+  class="module-card bg-slate-800 border border-slate-700 rounded-2xl shadow hover:shadow-lg
+         transition-all px-5 py-6 text-left flex flex-col justify-between hover:bg-slate-700/50"
+>
+  <span class="text-sm text-sky-400 font-medium mb-1">MÓDULO 6</span>
+  <span class="text-lg font-semibold">PLR</span>
+  <br>
+  <span class="text-sm text-slate-400 mt-2">PLR</span>
+</button>
+
+<!-- MÓDULO 7 – Combustível -->
+<button
+  data-name="Combustível"
+  onclick="window.location.href='/modulo7';"
+  class="module-card bg-slate-800 border border-slate-700 rounded-2xl shadow hover:shadow-lg
+         transition-all px-5 py-6 text-left flex flex-col justify-between hover:bg-slate-700/50"
+>
+  <span class="text-sm text-sky-400 font-medium mb-1">MÓDULO 7</span>
+  <span class="text-lg font-semibold">Combustível</span>
+  <br>
+  <span class="text-sm text-slate-400 mt-2">Combustível</span>
+</button>
+
+<!-- MÓDULO 8 – Bonificação -->
+<button
+  data-name="Bonificação"
+  onclick="window.location.href='/modulo8';"
+  class="module-card bg-slate-800 border border-slate-700 rounded-2xl shadow hover:shadow-lg
+         transition-all px-5 py-6 text-left flex flex-col justify-between hover:bg-slate-700/50"
+>
+  <span class="text-sm text-sky-400 font-medium mb-1">MÓDULO 8</span>
+  <span class="text-lg font-semibold">Bonificação</span>
+  <br>
+  <span class="text-sm text-slate-400 mt-2">Bonificação</span>
+</button>
+
+<!-- MÓDULO 9 – Prêmio assiduidade -->
+<button
+  data-name="Prêmio assiduidade"
+  onclick="window.location.href='/modulo9';"
+  class="module-card bg-slate-800 border border-slate-700 rounded-2xl shadow hover:shadow-lg
+         transition-all px-5 py-6 text-left flex flex-col justify-between hover:bg-slate-700/50"
+>
+  <span class="text-sm text-sky-400 font-medium mb-1">MÓDULO 9</span>
+  <span class="text-lg font-semibold">Prêmio assiduidade</span>
+  <br>
+  <span class="text-sm text-slate-400 mt-2">Prêmio assiduidade</span>
+</button>
+
+<!-- MÓDULO 10 – Uber -->
+<button
+  data-name="Uber"
+  onclick="window.location.href='/modulo10';"
+  class="module-card bg-slate-800 border border-slate-700 rounded-2xl shadow hover:shadow-lg
+         transition-all px-5 py-6 text-left flex flex-col justify-between hover:bg-slate-700/50"
+>
+  <span class="text-sm text-sky-400 font-medium mb-1">MÓDULO 10</span>
+  <span class="text-lg font-semibold">Uber</span>
+  <br>
+  <span class="text-sm text-slate-400 mt-2">Uber</span>
+</button>
+
+<!-- MÓDULO 11 – Cadastro -->
+<button
+  data-name="Cadastro"
+  onclick="window.location.href='/modulo11';"
+  class="module-card bg-slate-800 border border-slate-700 rounded-2xl shadow hover:shadow-lg
+         transition-all px-5 py-6 text-left flex flex-col justify-between hover:bg-slate-700/50"
+>
+  <span class="text-sm text-sky-400 font-medium mb-1">MÓDULO 11</span>
+  <span class="text-lg font-semibold">Cadastro</span>
+  <br>
+  <span class="text-sm text-slate-400 mt-2">Cadastro</span>
+</button>
+
+<!-- MÓDULO 12 – IAGF -->
+<button
+  data-name="IAGF"
+  onclick="window.location.href='/modulo12';"
+  class="module-card bg-slate-800 border border-slate-700 rounded-2xl shadow hover:shadow-lg
+         transition-all px-5 py-6 text-left flex flex-col justify-between hover:bg-slate-700/50"
+>
+  <span class="text-sm text-sky-400 font-medium mb-1">MÓDULO 12</span>
+  <span class="text-lg font-semibold">IAGF</span>
+  <br>
+  <span class="text-sm text-slate-400 mt-2">IAGF</span>
+</button>
+
+<!-- MÓDULO 13 – GESP -->
+<button
+  data-name="GESP"
+  onclick="window.location.href='/modulo13';"
+  class="module-card bg-slate-800 border border-slate-700 rounded-2xl shadow hover:shadow-lg
+         transition-all px-5 py-6 text-left flex flex-col justify-between hover:bg-slate-700/50"
+>
+  <span class="text-sm text-sky-400 font-medium mb-1">MÓDULO 13</span>
+  <span class="text-lg font-semibold">GESP</span>
+  <br>
+  <span class="text-sm text-slate-400 mt-2">GESP</span>
+</button>
+
+<!-- MÓDULO 14 – Faturamento -->
+<button
+  data-name="Faturamento"
+  onclick="window.location.href='/modulo14';"
+  class="module-card bg-slate-800 border border-slate-700 rounded-2xl shadow hover:shadow-lg
+         transition-all px-5 py-6 text-left flex flex-col justify-between hover:bg-slate-700/50"
+>
+  <span class="text-sm text-sky-400 font-medium mb-1">MÓDULO 14</span>
+  <span class="text-lg font-semibold">Faturamento</span>
+  <br>
+  <span class="text-sm text-slate-400 mt-2">Faturamento</span>
+</button>
+
+<!-- MÓDULO 15 – Compras -->
+<button
+  data-name="Compras"
+  onclick="window.location.href='/modulo15';"
+  class="module-card bg-slate-800 border border-slate-700 rounded-2xl shadow hover:shadow-lg
+         transition-all px-5 py-6 text-left flex flex-col justify-between hover:bg-slate-700/50"
+>
+  <span class="text-sm text-sky-400 font-medium mb-1">MÓDULO 15</span>
+  <span class="text-lg font-semibold">Compras</span>
+  <br>
+  <span class="text-sm text-slate-400 mt-2">Compras</span>
+</button>
+
+<!-- MÓDULO 16 – Horas suplementares -->
+ <button
+  data-name="Horas suplementares"
+  onclick="window.location.href='/modulo16';"
+  class="module-card bg-slate-800 border border-slate-700 rounded-2xl shadow hover:shadow-lg
+         transition-all px-5 py-6 text-left flex flex-col justify-between hover:bg-slate-700/50"
+>
+  <span class="text-sm text-sky-400 font-medium mb-1">MÓDULO 16</span>
+  <span class="text-lg font-semibold">Horas suplementares</span>
+  <br>
+  <span class="text-sm text-slate-400 mt-2">Horas suplementares</span>
+</button>
+
+
+
+    </div>
+  </main>
+
+
+  <!-- JS -->
+  <script>
+    function toggleMenu() {
+      const menu = document.getElementById("sideMenu");
+      const backdrop = document.getElementById("menuBackdrop");
+
+      menu.classList.toggle("open");
+
+      if (menu.classList.contains("open")) {
+        backdrop.style.display = "block";
+      } else {
+        backdrop.style.display = "none";
+      }
+    }
+
+    async function enviarFichaPresenca() {
+      const status = document.getElementById("fichaStatus");
+      const fileInput = document.getElementById("fichaUpload");
+
+      if (!fileInput.files.length) return;
+
+      const file = fileInput.files[0];
+      const formData = new FormData();
+      formData.append("file", file);
+
+      status.innerHTML = "⏳ Iniciando processamento...";
+
+      const etapas = [
+        "Lendo arquivo...",
+        "Convertendo datas...",
+        "Normalizando textos...",
+        "Calculando indicadores...",
+        "Gerando relatório final...",
+        "Finalizando..."
+      ];
+
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i < etapas.length) {
+          status.innerHTML = `⏳ ${etapas[i]}`;
+          i++;
+        }
+      }, 800);
+
+      const response = await fetch("/ficha/processar", {
+        method: "POST",
+        body: formData
+      });
+
+      clearInterval(interval);
+
+      const result = await response.json();
+
+      if (result.success) {
+        status.innerHTML = "✅ Arquivo processado! Baixando...";
+        window.location.href = result.download_url;
+      } else {
+        status.innerHTML = "❌ Erro: " + result.error;
+      }
+    }
+  </script>
+
+</body>
+</html>

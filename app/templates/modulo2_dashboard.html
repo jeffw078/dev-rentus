@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard – Suprimentos</title>
+
+  <!-- Tailwind (dev) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- XLSX (OBRIGATÓRIO) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="bg-slate-900 text-slate-200 min-h-screen">
+
+ <!-- HEADER -->
+ <header class="w-full flex items-center justify-center py-6 bg-slate-800 border-b border-slate-700 shadow-sm">
+  <div class="flex items-center gap-3">
+    <img src="/static/images/logo.png" alt="Rentus" class="h-10">
+    <span class="text-2xl font-bold text-slate-200 tracking-tight">
+      Módulo 2 - Dashboard – Suprimentos
+    </span>
+  </div>
+  <button
+      onclick="window.location.href='/'"
+      class="px-4 py-2 rounded-full text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 shadow"
+    >
+      Voltar
+    </button>
+</header>
+
+<main class="p-6 max-w-7xl mx-auto space-y-6">
+
+  <!-- Upload XLSX -->
+  <div class="bg-slate-800 p-4 rounded flex items-center gap-4">
+    <input
+      type="file"
+      id="xlsxInput"
+      accept=".xlsx"
+      class="hidden"
+    >
+
+    <button
+      onclick="document.getElementById('xlsxInput').click()"
+      class="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-lg"
+    >
+      Carregar XLSX
+    </button>
+
+    <span id="xlsxFilename" class="text-slate-400 italic text-sm">
+      Nenhum arquivo selecionado
+    </span>
+  </div>
+
+  <!-- KPIs -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="bg-slate-800 p-4 rounded">
+      <div class="text-slate-400 text-sm">Total gasto geral</div>
+      <div id="kpiTotal" class="text-2xl font-bold">—</div>
+    </div>
+
+    <div class="bg-slate-800 p-4 rounded">
+      <div class="text-slate-400 text-sm">Empresas</div>
+      <div id="kpiEmpresas" class="text-2xl font-bold">—</div>
+    </div>
+
+    <div class="bg-slate-800 p-4 rounded">
+      <div class="text-slate-400 text-sm">Produtos distintos</div>
+      <div id="kpiProdutos" class="text-2xl font-bold">—</div>
+    </div>
+
+    <div class="bg-slate-800 p-4 rounded">
+      <div class="text-slate-400 text-sm">Linhas</div>
+      <div id="kpiLinhas" class="text-2xl font-bold">—</div>
+    </div>
+  </div>
+
+  <!-- Gráficos -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="bg-slate-800 p-4 rounded">
+      <h2 class="font-semibold mb-2">Gastos por dia</h2>
+      <canvas id="chartGastosDia"></canvas>
+    </div>
+
+    <div class="bg-slate-800 p-4 rounded">
+      <h2 class="font-semibold mb-2">Compras por dia</h2>
+      <canvas id="chartComprasDia"></canvas>
+    </div>
+  </div>
+
+  <!-- Rankings -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="bg-slate-800 p-4 rounded">
+      <h2 class="font-semibold mb-2">Gasto por empresa</h2>
+      <ul id="listaEmpresas" class="text-sm space-y-1"></ul>
+    </div>
+
+    <div class="bg-slate-800 p-4 rounded">
+      <h2 class="font-semibold mb-2">Produtos por valor</h2>
+      <ul id="listaValor" class="text-sm space-y-1"></ul>
+    </div>
+
+    <div class="bg-slate-800 p-4 rounded">
+      <h2 class="font-semibold mb-2">Produtos por quantidade</h2>
+      <ul id="listaQuantidade" class="text-sm space-y-1"></ul>
+    </div>
+  </div>
+
+</main>
+
+<script>
+let chartGastos, chartCompras;
+
+const input = document.getElementById("xlsxInput");
+const fileLabel = document.getElementById("xlsxFilename");
+
+input.addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  fileLabel.textContent = file.name;
+
+  const buffer = await file.arrayBuffer();
+  const wb = XLSX.read(buffer, { type: "array" });
+
+  let rows = [];
+  wb.SheetNames.forEach(name => {
+    rows = rows.concat(XLSX.utils.sheet_to_json(wb.Sheets[name]));
+  });
+
+  if (!rows.length) return;
+
+  // KPIs
+  const total = rows.reduce((s, r) => s + Number(r.total_linha || 0), 0);
+  document.getElementById("kpiTotal").textContent =
+    "R$ " + total.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
+
+  document.getElementById("kpiEmpresas").textContent =
+    new Set(rows.map(r => r.empresa_nome)).size;
+
+  document.getElementById("kpiProdutos").textContent =
+    new Set(rows.map(r => r.produto_descricao)).size;
+
+  document.getElementById("kpiLinhas").textContent = rows.length;
+
+  // Agregações
+  const porEmpresa = {};
+  const porProdutoValor = {};
+  const porProdutoQtd = {};
+  const porDiaValor = {};
+  const porDiaQtd = {};
+
+  rows.forEach(r => {
+    const v = Number(r.total_linha || 0);
+    const q = Number(r.quantidade || 0);
+    const d = r.data_geracao;
+
+    porEmpresa[r.empresa_nome] = (porEmpresa[r.empresa_nome] || 0) + v;
+    porProdutoValor[r.produto_descricao] = (porProdutoValor[r.produto_descricao] || 0) + v;
+    porProdutoQtd[r.produto_descricao] = (porProdutoQtd[r.produto_descricao] || 0) + q;
+    porDiaValor[d] = (porDiaValor[d] || 0) + v;
+    porDiaQtd[d] = (porDiaQtd[d] || 0) + 1;
+  });
+
+  renderList("listaEmpresas", porEmpresa, "R$");
+  renderList("listaValor", porProdutoValor, "R$");
+  renderList("listaQuantidade", porProdutoQtd, "");
+
+  renderChart("chartGastosDia", porDiaValor, "R$");
+  renderChart("chartComprasDia", porDiaQtd, "Qtd");
+});
+
+function renderList(el, data, prefix){
+  const ul = document.getElementById(el);
+  ul.innerHTML = "";
+  Object.entries(data)
+    .sort((a,b)=>b[1]-a[1])
+    .slice(0,10)
+    .forEach(([k,v])=>{
+      ul.innerHTML += `<li>${k} — ${prefix} ${v.toLocaleString("pt-BR")}</li>`;
+    });
+}
+
+function renderChart(canvasId, data, label){
+  const ctx = document.getElementById(canvasId).getContext("2d");
+  const labels = Object.keys(data);
+  const values = Object.values(data);
+
+  if (canvasId === "chartGastosDia" && chartGastos) chartGastos.destroy();
+  if (canvasId === "chartComprasDia" && chartCompras) chartCompras.destroy();
+
+  const c = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{ label, data: values }]
+    }
+  });
+
+  if (canvasId === "chartGastosDia") chartGastos = c;
+  if (canvasId === "chartComprasDia") chartCompras = c;
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!-- app/templates/index.html -->
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sistema de Análises v1.3</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-900 text-slate-200 min-h-screen flex flex-col">
+
+  <!-- HEADER -->
+ <header class="w-full flex items-center justify-center py-6 bg-slate-800 border-b border-slate-700 shadow-sm">
+  <div class="flex items-center gap-3">
+    <img src="/static/images/logo.png" alt="Rentus" class="h-10">
+    <span class="text-2xl font-bold text-slate-200 tracking-tight">
+      Módulo 2 - Suprimentos
+    </span>
+  </div>
+  <button
+      onclick="window.location.href='/'"
+      class="px-4 py-2 rounded-full text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 shadow"
+    >
+      Voltar
+    </button>
+</header>
+
+<!-- CONTEÚDO -->
+<main class="flex-1 flex items-center justify-center p-6">
+
+  <div class="w-full max-w-4xl bg-slate-800 border border-slate-700 rounded-2xl shadow-xl p-8 space-y-6">
+
+    <!-- TÍTULO -->
+    <div>
+      <h1 class="text-2xl font-bold text-emerald-400">
+        Módulo 2 – Suprimentos
+      </h1>
+      <p class="text-slate-400 text-sm">
+        Importação de XML e geração de planilha consolidada (XLSX)
+      </p>
+      <p class="text-slate-400 text-sm">
+        1 - selecione até 10 arquivos XML;<br>
+        2 - clique em "Processar";<br>
+        3 - baixe a planilha gerada ou abra o dashboard.
+      </p>
+    </div>
+
+    <!-- INPUT XML -->
+    <div class="space-y-2">
+      <label class="text-sm font-medium text-slate-300">
+        Arquivos XML (até 10)
+      </label>
+
+      <div class="flex items-center gap-4">
+        <!-- input real -->
+        <input
+          type="file"
+          id="xmls"
+          multiple
+          accept=".xml"
+          class="hidden"
+        >
+
+        <!-- botão verde -->
+        <button
+          type="button"
+          onclick="document.getElementById('xmls').click()"
+          class="bg-emerald-600 hover:bg-emerald-500 text-white
+                 px-6 py-2 rounded-lg font-medium shadow transition"
+        >
+          Selecionar XMLs
+        </button>
+
+        <span id="fileInfo" class="text-sm text-slate-400 italic">
+          Nenhum arquivo selecionado
+        </span>
+      </div>
+    </div>
+
+    <!-- AÇÕES -->
+    <div class="flex items-center gap-4">
+      <button
+        onclick="processar()"
+        class="bg-sky-600 hover:bg-sky-500 text-white
+               px-6 py-2 rounded-lg font-medium shadow transition"
+      >
+        Processar
+      </button>
+
+      <a
+        id="download"
+        class="hidden bg-emerald-700 hover:bg-emerald-600 text-white
+               px-6 py-2 rounded-lg font-medium shadow transition"
+      >
+        Baixar XLSX
+      </a>
+
+      <button
+        onclick="window.location.href='/modulo2/dashboard'"
+        class="bg-slate-700 hover:bg-slate-600 text-white
+               px-6 py-2 rounded-lg font-medium shadow transition"
+      >
+        Abrir Dashboard
+      </button>
+    </div>
+
+    <!-- LOG -->
+    <div>
+      <h2 class="text-sm font-semibold text-slate-300 mb-2">
+        Log de processamento
+      </h2>
+      <pre
+        id="log"
+        class="bg-slate-900 border border-slate-700 rounded-lg p-4
+               text-xs text-slate-300 max-h-64 overflow-y-auto"
+      >Aguardando processamento...</pre>
+    </div>
+
+  </div>
+</main>
+
+<script>
+const input = document.getElementById("xmls");
+const fileInfo = document.getElementById("fileInfo");
+
+input.addEventListener("change", () => {
+  const count = input.files.length;
+  if (count === 0) {
+    fileInfo.textContent = "Nenhum arquivo selecionado";
+  } else {
+    fileInfo.textContent = `${count} arquivo(s) selecionado(s)`;
+  }
+});
+
+async function processar(){
+  const files = input.files;
+  if (!files.length) {
+    alert("Selecione ao menos um XML.");
+    return;
+  }
+
+  const logEl = document.getElementById("log");
+  logEl.textContent = "Iniciando processamento...\n";
+
+  const fd = new FormData();
+  for(const f of files) fd.append("xmls", f);
+
+  try {
+    const r = await fetch("/modulo2/process", {
+      method: "POST",
+      body: fd
+    });
+
+    const j = await r.json();
+
+    logEl.textContent = (j.logs || []).join("\n") || "Processamento concluído.";
+
+    if (j.success) {
+      const a = document.getElementById("download");
+      a.href = j.download_url;
+      a.classList.remove("hidden");
+    } else {
+      alert(j.error || "Erro no processamento");
+    }
+
+  } catch (e) {
+    logEl.textContent += "\nErro inesperado no servidor.";
+  }
+}
+</script>
+
+</body>
+</html>
