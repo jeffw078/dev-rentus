@@ -39,6 +39,12 @@ app = FastAPI(title="Rentus Analyzer", version="1.0")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
+# --- Dashboard Módulo 1 (análise dinâmica) ---
+try:
+    from projects.modulo1.dashboard import router as modulo1_dashboard_router
+    app.include_router(modulo1_dashboard_router)
+except Exception as e:
+    print("[WARN] Dashboard do Módulo 1 não carregado:", e)
 
 # ============================================================
 # LOGGER
@@ -88,9 +94,9 @@ async def login_page(request: Request):
 async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-@app.get("/dashboard", response_class=HTMLResponse)
+@app.get("/dashboard_modulo1", response_class=HTMLResponse)
 async def dashboard_page(request: Request):
-    return templates.TemplateResponse("dashboard.html", {"request": request})
+    return templates.TemplateResponse("dashboard_modulo1.html", {"request": request})
 
 @app.get("/modulo2/dashboard", response_class=HTMLResponse)
 async def modulo2_dashboard_page(request: Request):

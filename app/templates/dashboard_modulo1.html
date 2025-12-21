@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Rentus Análises — Dashboard Módulo 1</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    #sideMenu { position: fixed; left: 0; top: 0; height: 100vh; width: 0; background: #1e293b; overflow-x: hidden;
+      transition: width 0.25s ease-in-out; z-index: 9999; padding: 0; }
+    #sideMenu.open { width: 360px; padding: 24px; }
+    #menuBackdrop { display:none; position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.45); z-index: 9990; }
+    .sticky-head thead th{ position: sticky; top: 0; background: #0f172a; z-index: 10; }
+    .soft-scroll::-webkit-scrollbar { height: 10px; width: 10px; }
+    .soft-scroll::-webkit-scrollbar-thumb { background: rgba(148,163,184,.25); border-radius: 999px; }
+    .soft-scroll::-webkit-scrollbar-track { background: rgba(15,23,42,.35); }
+    .pulse-green { box-shadow: 0 0 0 0 rgba(16,185,129,.55); animation: pulseGreen 1.6s infinite; }
+    @keyframes pulseGreen { 0%{ box-shadow: 0 0 0 0 rgba(16,185,129,.45);} 70%{ box-shadow: 0 0 0 12px rgba(16,185,129,0);} 100%{ box-shadow: 0 0 0 0 rgba(16,185,129,0);} }
+  </style>
+</head>
+
+<body class="bg-slate-900 text-slate-200 min-h-screen flex flex-col">
+  <div id="menuBackdrop" onclick="toggleMenu()"></div>
+
+  <!-- HEADER (reaproveitando o padrão) -->
+  <header class="w-full flex items-center justify-start gap-4 py-4 px-6 bg-slate-800 border-b border-slate-700 shadow-sm">
+    <button onclick="toggleMenu()" class="text-2xl select-none leading-none" aria-label="Abrir menu">☰</button>
+
+    <div class="flex items-center gap-3">
+      <img src="/static/images/logo.png" alt="Rentus" class="h-10">
+      <div class="leading-tight">
+        <div class="text-xl font-bold">Rentus Análises</div>
+        <div class="text-xs text-slate-400 -mt-0.5">Módulo 1 — VR/VA/CESTA • Auditoria & Conciliação</div>
+      </div>
+    </div>
+
+    <div class="ml-auto flex items-center gap-2">
+      <span id="statusPill" class="text-xs px-3 py-1 rounded-full bg-slate-700 border border-slate-600 text-slate-200">
+        Selecione a planilha para iniciar
+      </span>
+      <button onclick="window.location.href='/modulo1'"
+        class="px-4 py-2 rounded-full text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 shadow">
+        Voltar
+      </button>
+    </div>
+  </header>
+
+  <!-- MENU LATERAL -->
+  <aside id="sideMenu" class="select-none">
+    <button onclick="toggleMenu()" class="text-2xl mb-6 leading-none" aria-label="Fechar menu">✕</button>
+
+    <h2 class="text-lg font-bold mb-3">Módulo 1 — Dashboard</h2>
+
+    <!-- Botão verde com pulse -->
+    <label class="cursor-pointer flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-3 rounded-xl transition pulse-green">
+      <input type="file" id="excelUpload" class="hidden" accept=".xlsx,.xls" onchange="onExcelSelected()">
+      ✅ Carregar planilha
+    </label>
+
+    <div id="uploadInfo" class="mt-3 text-sm text-slate-300"></div>
+
+    <hr class="border-slate-700 my-6">
+
+    <h2 class="text-lg font-bold mb-3">Atalhos</h2>
+    <div class="grid grid-cols-1 gap-2">
+      <button onclick="scrollToSection('sec1')" class="w-full text-left bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg">1) Indicadores</button>
+      <button onclick="scrollToSection('sec2')" class="w-full text-left bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg">2) Pagamentos Indevidos</button>
+      <button onclick="scrollToSection('sec3')" class="w-full text-left bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg">3) Divergências</button>
+      <button onclick="scrollToSection('sec4')" class="w-full text-left bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg">4) Faltantes</button>
+      <button onclick="scrollToSection('sec5')" class="w-full text-left bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg">5) Concentração</button>
+    </div>
+
+    <div class="mt-6 text-xs text-slate-400">
+      Observação: se a planilha não tiver coluna de data/competência, o filtro por datas vira apenas “informativo”.
+    </div>
+  </aside>
+
+  <main class="flex-1 p-6 md:p-8 space-y-6">
+
+    <!-- FILTROS -->
+    <section class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5">
+      <div class="flex flex-col lg:flex-row lg:items-end gap-4">
+        <div class="flex-1">
+          <div class="text-sm text-slate-400">Período de auditoria</div>
+          <div class="text-lg font-semibold">Selecione o intervalo e clique em <b>Processar</b></div>
+          <div id="noteFiltroData" class="text-xs text-slate-500 mt-1"></div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 w-full lg:w-auto">
+          <label class="block">
+            <span class="text-xs text-slate-400">Data início</span>
+            <input id="dtInicio" type="date"
+              class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-500"/>
+          </label>
+
+          <label class="block">
+            <span class="text-xs text-slate-400">Data fim</span>
+            <input id="dtFim" type="date"
+              class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-500"/>
+          </label>
+
+          <div class="flex gap-2">
+            <button id="btnProcessar" onclick="processar()"
+              class="flex-1 mt-6 sm:mt-0 bg-sky-600 hover:bg-sky-500 text-white font-semibold rounded-xl px-4 py-2 shadow">
+              Processar
+            </button>
+            <button onclick="resetar()"
+              class="mt-6 sm:mt-0 bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold rounded-xl px-4 py-2 border border-slate-600">
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4">
+          <div class="text-xs text-slate-400">O que o dashboard calcula</div>
+          <ul class="mt-2 space-y-1 text-sm">
+            <li>• Conciliação: valor esperado x pago</li>
+            <li>• Itens indevidos: desligados/aviso/afastados</li>
+            <li>• Omissões: esperado &gt; 0 e pago = 0</li>
+          </ul>
+        </div>
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4">
+          <div class="text-xs text-slate-400">Tolerância</div>
+          <div class="mt-2 flex items-center gap-2">
+            <span class="text-sm text-slate-300">R$</span>
+            <input id="tolerancia" type="number" step="0.01" value="0.50"
+              class="w-32 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-500"/>
+            <span class="text-xs text-slate-500">diferenças abaixo disso são ignoradas</span>
+          </div>
+        </div>
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4">
+          <div class="text-xs text-slate-400">Export</div>
+          <button onclick="downloadJSON()"
+            class="mt-2 text-xs bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-xl border border-slate-600">
+            Baixar JSON (resultado)
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 1️⃣ KPIs -->
+    <section id="sec1" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5">
+        <div class="text-xs text-slate-400">Valor total esperado</div>
+        <div id="kpiEsperado" class="text-2xl font-bold mt-1">R$ 0,00</div>
+      </div>
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5">
+        <div class="text-xs text-slate-400">Valor total pago</div>
+        <div id="kpiPago" class="text-2xl font-bold mt-1">R$ 0,00</div>
+      </div>
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5">
+        <div class="text-xs text-slate-400">Diferença total</div>
+        <div id="kpiDifTotal" class="text-2xl font-bold mt-1">R$ 0,00</div>
+        <div id="kpiDifPct" class="text-xs text-slate-400 mt-2">0,00%</div>
+      </div>
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5">
+        <div class="text-xs text-slate-400">Total em risco</div>
+        <div id="kpiRisco" class="text-2xl font-bold mt-1">R$ 0,00</div>
+        <div class="text-xs text-slate-500 mt-2">Somatório das divergências</div>
+      </div>
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5">
+        <div class="text-xs text-slate-400">Divergências</div>
+        <div id="kpiDivCount" class="text-2xl font-bold mt-1">0</div>
+        <div class="text-xs text-slate-500 mt-2">Acima da tolerância</div>
+      </div>
+    </section>
+
+    <!-- 2️⃣ Pagamentos indevidos -->
+    <section id="sec2" class="bg-slate-800 border border-slate-700 rounded-2xl shadow overflow-hidden">
+      <div class="p-5 flex items-center justify-between gap-3">
+        <div>
+          <div class="text-lg font-bold">2) Pagamentos Indevidos</div>
+          <div class="text-xs text-slate-400">Demitidos / aviso prévio / afastados / cadastro inválido</div>
+        </div>
+        <span id="pillIndevidos" class="text-xs px-3 py-1 rounded-full bg-slate-700 border border-slate-600">0</span>
+      </div>
+
+      <div class="max-h-[420px] overflow-auto soft-scroll sticky-head">
+        <table class="w-full text-sm">
+          <thead class="text-slate-300">
+            <tr class="border-b border-slate-700">
+              <th class="text-left p-3">RE</th>
+              <th class="text-left p-3">Nome</th>
+              <th class="text-left p-3">Status</th>
+              <th class="text-right p-3">Pago</th>
+              <th class="text-left p-3">Obs.</th>
+            </tr>
+          </thead>
+          <tbody id="tbIndevidos"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 3️⃣ Divergências -->
+    <section id="sec3" class="bg-slate-800 border border-slate-700 rounded-2xl shadow overflow-hidden">
+      <div class="p-5">
+        <div class="text-lg font-bold">3) Divergências de Valor</div>
+        <div class="text-xs text-slate-400">Maior que a tolerância • priorizar maiores impactos</div>
+      </div>
+
+      <div class="max-h-[520px] overflow-auto soft-scroll sticky-head">
+        <table class="w-full text-sm">
+          <thead class="text-slate-300">
+            <tr class="border-b border-slate-700">
+              <th class="text-left p-3">RE</th>
+              <th class="text-left p-3">Nome</th>
+              <th class="text-right p-3">Esperado</th>
+              <th class="text-right p-3">Pago</th>
+              <th class="text-right p-3">Dif.</th>
+              <th class="text-left p-3">Alerta</th>
+            </tr>
+          </thead>
+          <tbody id="tbDivergencias"></tbody>
+        </table>
+      </div>
+
+      <div class="p-4 border-t border-slate-700 bg-slate-900 text-xs text-slate-400">
+        Dica: se a sua planilha já tem a coluna “Diferença”, o sistema usa ela; caso contrário calcula (pago - esperado).
+      </div>
+    </section>
+
+    <!-- 4️⃣ Faltantes -->
+    <section id="sec4" class="bg-slate-800 border border-slate-700 rounded-2xl shadow overflow-hidden">
+      <div class="p-5 flex items-center justify-between gap-3">
+        <div>
+          <div class="text-lg font-bold">4) Faltantes e Omissões</div>
+          <div class="text-xs text-slate-400">Esperado &gt; 0 e pago = 0 • ativos sem cadastro</div>
+        </div>
+        <div class="flex gap-2">
+          <span id="pillFaltantes" class="text-xs px-3 py-1 rounded-full bg-slate-700 border border-slate-600">0</span>
+          <span id="pillSemCadastro" class="text-xs px-3 py-1 rounded-full bg-slate-700 border border-slate-600">0</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 p-5 pt-0">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl overflow-hidden">
+          <div class="p-4 font-semibold text-sm">Faltantes</div>
+          <div class="max-h-80 overflow-auto soft-scroll sticky-head">
+            <table class="w-full text-sm">
+              <thead class="text-slate-300">
+                <tr class="border-b border-slate-700">
+                  <th class="text-left p-2">RE</th>
+                  <th class="text-left p-2">Nome</th>
+                  <th class="text-right p-2">Esperado</th>
+                  <th class="text-left p-2">Obs.</th>
+                </tr>
+              </thead>
+              <tbody id="tbFaltantes"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl overflow-hidden">
+          <div class="p-4 font-semibold text-sm">Ativos sem cadastro (heurística)</div>
+          <div class="max-h-80 overflow-auto soft-scroll sticky-head">
+            <table class="w-full text-sm">
+              <thead class="text-slate-300">
+                <tr class="border-b border-slate-700">
+                  <th class="text-left p-2">RE</th>
+                  <th class="text-left p-2">Nome</th>
+                  <th class="text-right p-2">Esperado</th>
+                  <th class="text-left p-2">Obs.</th>
+                </tr>
+              </thead>
+              <tbody id="tbSemCadastro"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5️⃣ Concentração -->
+    <section id="sec5" class="bg-slate-800 border border-slate-700 rounded-2xl shadow overflow-hidden">
+      <div class="p-5">
+        <div class="text-lg font-bold">5) Concentração de erros</div>
+        <div class="text-xs text-slate-400">Onde atacar primeiro: cargo, escala, situação</div>
+      </div>
+
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 p-5 pt-0">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4">
+          <div class="font-semibold text-sm">Por cargo (Top 12)</div>
+          <div id="chartCargo" class="mt-3 space-y-2"></div>
+        </div>
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4">
+          <div class="font-semibold text-sm">Por escala (Top 12)</div>
+          <div id="chartEscala" class="mt-3 space-y-2"></div>
+        </div>
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4">
+          <div class="font-semibold text-sm">Por situação (Top 12)</div>
+          <div id="chartSituacao" class="mt-3 space-y-2"></div>
+        </div>
+      </div>
+
+      <div class="p-5 pt-0">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4">
+          <div class="text-xs text-slate-400">Meta/diagnóstico (debug rápido)</div>
+          <pre id="metaBox" class="mt-2 text-xs bg-slate-950 border border-slate-800 rounded-xl p-3 overflow-auto soft-scroll">{}</pre>
+        </div>
+      </div>
+    </section>
+
+    <footer class="text-xs text-slate-500 pb-8">
+      RentUs BPO - 2025
+    </footer>
+  </main>
+
+<script>
+  // ========= Estado =========
+  let selectedFile = null;
+  let lastPayload = null;
+
+  const BRL = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+
+  function toggleMenu() {
+    const menu = document.getElementById("sideMenu");
+    const backdrop = document.getElementById("menuBackdrop");
+    menu.classList.toggle("open");
+    backdrop.style.display = menu.classList.contains("open") ? "block" : "none";
+  }
+  function scrollToSection(id){
+    const el = document.getElementById(id);
+    if(!el) return;
+    toggleMenu();
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function setStatus(text, kind="neutral"){
+    const pill = document.getElementById("statusPill");
+    pill.textContent = text;
+    pill.className = "text-xs px-3 py-1 rounded-full border shadow";
+    if(kind === "ok") pill.classList.add("bg-emerald-900/40","border-emerald-700","text-emerald-200");
+    else if(kind === "warn") pill.classList.add("bg-amber-900/40","border-amber-700","text-amber-200");
+    else if(kind === "bad") pill.classList.add("bg-rose-900/40","border-rose-700","text-rose-200");
+    else pill.classList.add("bg-slate-700","border-slate-600","text-slate-200");
+  }
+
+  function toISO(dt){
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth()+1).padStart(2,"0");
+    const d = String(dt.getDate()).padStart(2,"0");
+    return `${y}-${m}-${d}`;
+  }
+  function safeNum(x){
+    const n = Number(x);
+    return Number.isFinite(n) ? n : 0;
+  }
+  function esc(s){
+    return String(s ?? "")
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
+
+  function onExcelSelected(){
+    const input = document.getElementById("excelUpload");
+    if(!input.files.length) return;
+    selectedFile = input.files[0];
+    document.getElementById("uploadInfo").textContent = `Arquivo: ${selectedFile.name} (${Math.round(selectedFile.size/1024)} KB)`;
+    setStatus("Arquivo carregado. Ajuste o período e clique em Processar.", "ok");
+  }
+
+  async function processar(){
+    const dtInicio = document.getElementById("dtInicio").value;
+    const dtFim = document.getElementById("dtFim").value;
+    const tolerancia = Math.max(0, safeNum(document.getElementById("tolerancia").value || 0));
+
+    if(!selectedFile){
+      setStatus("Clique em 'Carregar planilha' no menu lateral.", "warn");
+      toggleMenu();
+      return;
+    }
+    if(!dtInicio || !dtFim){
+      setStatus("Selecione data início e fim.", "warn");
+      return;
+    }
+    if(dtFim < dtInicio){
+      setStatus("Data fim menor que início.", "warn");
+      return;
+    }
+
+    setStatus("Processando…", "warn");
+
+    const fd = new FormData();
+    fd.append("file", selectedFile);
+    fd.append("dt_inicio", dtInicio);
+    fd.append("dt_fim", dtFim);
+    fd.append("tolerancia", String(tolerancia));
+
+    try{
+      const res = await fetch("/modulo1/analyze", { method: "POST", body: fd });
+      const payload = await res.json();
+
+      if(!payload || payload.success !== true){
+        setStatus(payload?.error || "Erro no processamento.", "bad");
+        return;
+      }
+      lastPayload = payload.data;
+      renderAll(lastPayload);
+      setStatus("Processado com sucesso.", "ok");
+    }catch(e){
+      console.error(e);
+      setStatus("Erro ao chamar a API.", "bad");
+    }
+  }
+
+  function setPill(id, n){
+    const el = document.getElementById(id);
+    el.textContent = String(n);
+    el.className = "text-xs px-3 py-1 rounded-full border";
+    if(n === 0) el.classList.add("bg-emerald-900/30","border-emerald-700","text-emerald-200");
+    else el.classList.add("bg-rose-900/30","border-rose-700","text-rose-200");
+  }
+
+  function renderBarList(containerId, items){
+    const el = document.getElementById(containerId);
+    el.innerHTML = "";
+    if(!items || !items.length){
+      el.innerHTML = `<div class="text-sm text-slate-400">Sem concentração (sem divergências acima da tolerância).</div>`;
+      return;
+    }
+    const maxVal = Math.max(...items.map(x => safeNum(x.valor)), 1);
+    items.forEach(x => {
+      const pct = Math.round((safeNum(x.valor) / maxVal) * 100);
+      const row = document.createElement("div");
+      row.innerHTML = `
+        <div class="flex justify-between text-xs text-slate-400">
+          <span class="truncate max-w-[60%]">${esc(x.chave)}</span>
+          <span>${BRL.format(safeNum(x.valor))} • ${esc(String(x.qtd))}</span>
+        </div>
+        <div class="h-2 bg-slate-950 rounded-full border border-slate-800 overflow-hidden">
+          <div class="h-full bg-slate-200/40" style="width:${pct}%"></div>
+        </div>
+      `;
+      el.appendChild(row);
+    });
+  }
+
+  function renderAll(d){
+    // meta/debug
+    document.getElementById("metaBox").textContent = JSON.stringify(d.meta, null, 2);
+
+    // nota filtro data
+    const note = document.getElementById("noteFiltroData");
+    if(d.meta.filtro_data_aplicado){
+      note.textContent = "Filtro por datas aplicado (coluna de data detectada).";
+    }else{
+      note.textContent = "Sem coluna de data/competência detectada: o filtro por datas não foi aplicado.";
+    }
+
+    // 1) KPIs
+    const k = d.kpis;
+    document.getElementById("kpiEsperado").textContent = BRL.format(safeNum(k.total_esperado));
+    document.getElementById("kpiPago").textContent = BRL.format(safeNum(k.total_pago));
+    document.getElementById("kpiDifTotal").textContent = BRL.format(safeNum(k.dif_total));
+    document.getElementById("kpiDifPct").textContent = `${safeNum(k.dif_pct).toFixed(2)}%`;
+    document.getElementById("kpiRisco").textContent = BRL.format(safeNum(k.total_em_risco));
+    document.getElementById("kpiDivCount").textContent = String(k.divergencias_count || 0);
+
+    // 2) Indevidos
+    const indev = d.pagamentos_indevidos || [];
+    setPill("pillIndevidos", indev.length);
+    const tbI = document.getElementById("tbIndevidos");
+    tbI.innerHTML = "";
+    if(!indev.length){
+      tbI.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-400">Nenhum pagamento indevido identificado (pela heurística).</td></tr>`;
+    }else{
+      indev.slice(0, 500).forEach(x => {
+        const status = [x.demitido, x.aviso_previo, x.situacao].filter(Boolean).join(" | ");
+        const obs = (!x.cadastro_ok && safeNum(x.valor_beneficio)>0) ? "Cadastro inválido" : (x.alerta || "");
+        const tr = document.createElement("tr");
+        tr.className = "border-b border-slate-700/60 hover:bg-slate-700/30";
+        tr.innerHTML = `
+          <td class="p-3 whitespace-nowrap">${esc(x.re)}</td>
+          <td class="p-3">${esc(x.nome || "")}</td>
+          <td class="p-3 text-slate-300">${esc(status || "-")}</td>
+          <td class="p-3 text-right">${BRL.format(safeNum(x.valor_beneficio))}</td>
+          <td class="p-3 text-slate-300">${esc(obs || "-")}</td>
+        `;
+        tbI.appendChild(tr);
+      });
+    }
+
+    // 3) Divergências
+    const diverg = d.divergencias || [];
+    const tbD = document.getElementById("tbDivergencias");
+    tbD.innerHTML = "";
+    if(!diverg.length){
+      tbD.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">Nenhuma divergência acima da tolerância.</td></tr>`;
+    }else{
+      diverg.slice(0, 1000).forEach(x => {
+        const dif = safeNum(x.dif);
+        const tr = document.createElement("tr");
+        tr.className = "border-b border-slate-700/60 hover:bg-slate-700/30";
+        tr.innerHTML = `
+          <td class="p-3 whitespace-nowrap">${esc(x.re)}</td>
+          <td class="p-3">${esc(x.nome || "")}</td>
+          <td class="p-3 text-right">${BRL.format(safeNum(x.valor_op))}</td>
+          <td class="p-3 text-right">${BRL.format(safeNum(x.valor_beneficio))}</td>
+          <td class="p-3 text-right ${Math.abs(dif) > 10 ? "text-rose-300" : "text-amber-200"}">${BRL.format(dif)}</td>
+          <td class="p-3 text-slate-300">${esc(x.alerta || "-")}</td>
+        `;
+        tbD.appendChild(tr);
+      });
+    }
+
+    // 4) Faltantes
+    const falt = d.faltantes || [];
+    setPill("pillFaltantes", falt.length);
+    const tbF = document.getElementById("tbFaltantes");
+    tbF.innerHTML = "";
+    if(!falt.length){
+      tbF.innerHTML = `<tr><td colspan="4" class="p-5 text-center text-slate-400">Nenhum faltante (esperado&gt;0 e pago=0).</td></tr>`;
+    }else{
+      falt.slice(0, 1000).forEach(x => {
+        const tr = document.createElement("tr");
+        tr.className = "border-b border-slate-700/60 hover:bg-slate-700/30";
+        tr.innerHTML = `
+          <td class="p-2 whitespace-nowrap">${esc(x.re)}</td>
+          <td class="p-2">${esc(x.nome || "")}</td>
+          <td class="p-2 text-right">${BRL.format(safeNum(x.valor_op))}</td>
+          <td class="p-2 text-slate-300">Esperado &gt; 0 e pago = 0</td>
+        `;
+        tbF.appendChild(tr);
+      });
+    }
+
+    const semCad = d.ativos_sem_cadastro || [];
+    setPill("pillSemCadastro", semCad.length);
+    const tbSC = document.getElementById("tbSemCadastro");
+    tbSC.innerHTML = "";
+    if(!semCad.length){
+      tbSC.innerHTML = `<tr><td colspan="4" class="p-5 text-center text-slate-400">Nenhum ativo sem cadastro (heurística).</td></tr>`;
+    }else{
+      semCad.slice(0, 500).forEach(x => {
+        const tr = document.createElement("tr");
+        tr.className = "border-b border-slate-700/60 hover:bg-slate-700/30";
+        tr.innerHTML = `
+          <td class="p-2 whitespace-nowrap">${esc(x.re)}</td>
+          <td class="p-2">${esc(x.nome || "")}</td>
+          <td class="p-2 text-right">${BRL.format(safeNum(x.valor_op))}</td>
+          <td class="p-2 text-slate-300">RE inválido / cadastro incompleto</td>
+        `;
+        tbSC.appendChild(tr);
+      });
+    }
+
+    // 5) Concentração
+    renderBarList("chartCargo", d.concentracao?.por_cargo || []);
+    renderBarList("chartEscala", d.concentracao?.por_escala || []);
+    renderBarList("chartSituacao", d.concentracao?.por_situacao || []);
+  }
+
+  function downloadJSON(){
+    if(!lastPayload){
+      setStatus("Nada para baixar (faça um processamento).", "warn");
+      return;
+    }
+    const blob = new Blob([JSON.stringify(lastPayload, null, 2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "resultado_modulo1_dashboard.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function resetar(){
+    selectedFile = null;
+    lastPayload = null;
+    document.getElementById("excelUpload").value = "";
+    document.getElementById("uploadInfo").textContent = "";
+    document.getElementById("metaBox").textContent = "{}";
+    document.getElementById("noteFiltroData").textContent = "";
+
+    document.getElementById("kpiEsperado").textContent = "R$ 0,00";
+    document.getElementById("kpiPago").textContent = "R$ 0,00";
+    document.getElementById("kpiDifTotal").textContent = "R$ 0,00";
+    document.getElementById("kpiDifPct").textContent = "0,00%";
+    document.getElementById("kpiRisco").textContent = "R$ 0,00";
+    document.getElementById("kpiDivCount").textContent = "0";
+
+    document.getElementById("tbIndevidos").innerHTML = "";
+    document.getElementById("tbDivergencias").innerHTML = "";
+    document.getElementById("tbFaltantes").innerHTML = "";
+    document.getElementById("tbSemCadastro").innerHTML = "";
+    document.getElementById("chartCargo").innerHTML = "";
+    document.getElementById("chartEscala").innerHTML = "";
+    document.getElementById("chartSituacao").innerHTML = "";
+
+    setPill("pillIndevidos", 0);
+    setPill("pillFaltantes", 0);
+    setPill("pillSemCadastro", 0);
+
+    setStatus("Selecione a planilha para iniciar", "neutral");
+  }
+
+  (function init(){
+    const today = new Date();
+    const start = new Date(today.getFullYear(), today.getMonth(), 1);
+    document.getElementById("dtInicio").value = toISO(start);
+    document.getElementById("dtFim").value = toISO(today);
+  })();
+</script>
+</body>
+</html>
