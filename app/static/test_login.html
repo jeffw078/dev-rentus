@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Teste de Login - Simples</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 400px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #1a1a1a;
+      color: #fff;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #444;
+      background: #2a2a2a;
+      color: #fff;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #10b981;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #059669;
+    }
+    .message {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .error {
+      background: #991b1b;
+      border: 1px solid #dc2626;
+    }
+    .success {
+      background: #065f46;
+      border: 1px solid #10b981;
+    }
+    .info {
+      background: #1e3a8a;
+      border: 1px solid #3b82f6;
+    }
+    .test-box {
+      background: #422006;
+      border: 1px solid #f59e0b;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔐 Teste de Login</h1>
+  
+  <div class="test-box">
+    <strong>⚠️ MODO TESTE</strong>
+    <div class="form-group">
+      <label>Selecione um usuário:</label>
+      <select id="usuario-teste" onchange="preencherUsuario()">
+        <option value="">-- Selecione --</option>
+        <option value="admin@rentus.com|admin">Admin</option>
+        <option value="direcao@rentus.com|direcao">Direção</option>
+        <option value="gestor@rentus.com|gestor">Gestor</option>
+        <option value="auditor@rentus.com|auditores">Auditor</option>
+        <option value="operacional@rentus.com|operacional">Operacional</option>
+        <option value="loyal@rentus.com|loyal">Loyal</option>
+      </select>
+    </div>
+  </div>
+
+  <form id="loginForm" onsubmit="fazerLogin(event)">
+    <div class="form-group">
+      <label>Email:</label>
+      <input type="email" id="email" required>
+    </div>
+
+    <div class="form-group">
+      <label>Senha:</label>
+      <input type="password" id="senha" required>
+    </div>
+
+    <button type="submit">Entrar</button>
+  </form>
+
+  <div id="message"></div>
+
+  <script>
+    function preencherUsuario() {
+      const select = document.getElementById('usuario-teste');
+      const valor = select.value;
+      
+      if (valor) {
+        const [email, senha] = valor.split('|');
+        document.getElementById('email').value = email;
+        document.getElementById('senha').value = senha;
+      } else {
+        document.getElementById('email').value = '';
+        document.getElementById('senha').value = '';
+      }
+    }
+
+    async function fazerLogin(event) {
+      event.preventDefault();
+      
+      const email = document.getElementById('email').value;
+      const senha = document.getElementById('senha').value;
+      const messageDiv = document.getElementById('message');
+      
+      messageDiv.innerHTML = '<div class="message info">Autenticando...</div>';
+      
+      try {
+        console.log('Enviando login para:', '/api/auth/login');
+        console.log('Email:', email);
+        
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, senha })
+        });
+        
+        console.log('Status:', response.status);
+        console.log('OK:', response.ok);
+        
+        const data = await response.json();
+        console.log('Resposta:', data);
+        
+        if (response.ok && data.access_token) {
+          messageDiv.innerHTML = '<div class="message success">✓ Login bem-sucedido!</div>';
+          
+          // Salvar token
+          localStorage.setItem('access_token', data.access_token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+          
+          // Redirecionar
+          setTimeout(() => {
+            window.location.href = '/index';
+          }, 1000);
+          
+        } else {
+          let errorMsg = 'Erro ao fazer login';
+          
+          if (data.error) {
+            errorMsg = data.message || data.error;
+          } else if (data.detail) {
+            errorMsg = data.detail;
+          } else if (data.message) {
+            errorMsg = data.message;
+          }
+          
+          messageDiv.innerHTML = `<div class="message error">✗ ${errorMsg}</div>`;
+          document.getElementById('senha').value = '';
+        }
+        
+      } catch (error) {
+        console.error('Erro:', error);
+        messageDiv.innerHTML = `<div class="message error">✗ Erro de conexão: ${error.message}</div>`;
+      }
+    }
+  </script>
+</body>
+</html>

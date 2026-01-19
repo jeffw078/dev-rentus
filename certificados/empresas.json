@@ -1,0 +1,28 @@
+{
+  "empresas": [
+    {
+      "cnpj": "12817803000112",
+      "razao_social": "PARTNER SECURITY SERVICOS DE SEGURANCA LTDA",
+      "cert_pfx": "certificados/PARTNER SECURITY SERVICOS DE SEGURANCA LTDA_12817803000112 (1).pfx",
+      "cert_senha": "123456",
+      "uf": 35,
+      "sefaz_endpoint": "https://www1.nfe.fazenda.gov.br/NFeDistribuicaoDFe/NFeDistribuicaoDFe.asmx"
+    },
+    {
+      "cnpj": "08818229000140",
+      "razao_social": "PRESSSEG SERVICOS DE SEGURANCA LTDA",
+      "cert_pfx": "certificados/PRESSSEG SERVICOS DE SEGURANCA LTDA_08818229000140 (2).pfx",
+      "cert_senha": "123456",
+      "uf": 35,
+      "sefaz_endpoint": "https://www1.nfe.fazenda.gov.br/NFeDistribuicaoDFe/NFeDistribuicaoDFe.asmx"
+    },
+    {
+      "cnpj": "56419492000109",
+      "razao_social": "WORKS CONSTRUCAO & SERVICOS LTDA",
+      "cert_pfx": "certificados/WORKS CONSTRUCAO & SERVICOS LTDA_56419492000109 (2).pfx",
+      "cert_senha": "123456",
+      "uf": 35,
+      "sefaz_endpoint": "https://www1.nfe.fazenda.gov.br/NFeDistribuicaoDFe/NFeDistribuicaoDFe.asmx"
+    }
+  ]
+}

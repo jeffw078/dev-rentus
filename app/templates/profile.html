@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rentus • Meu Perfil</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-900 text-slate-200 min-h-screen">
+
+  <!-- HEADER -->
+  <header class="bg-slate-800 border-b border-slate-700">
+    <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+      <div class="flex items-center gap-4">
+        <img src="/static/images/logo.png" alt="Rentus" class="h-10">
+        <h1 class="text-xl font-bold">Meu Perfil</h1>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="/index" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm">
+          ← Voltar
+        </a>
+        <button onclick="logout()" class="px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-sm">
+          Sair
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main class="container mx-auto px-6 py-8 max-w-4xl">
+
+    <!-- CARD PRINCIPAL -->
+    <div class="bg-slate-800 rounded-xl shadow-lg overflow-hidden mb-6">
+      
+      <!-- HEADER DO CARD -->
+      <div class="bg-gradient-to-r from-emerald-800 to-emerald-700 p-6">
+        <div class="flex items-center gap-4">
+          <div class="w-20 h-20 bg-slate-700 rounded-full flex items-center justify-center text-3xl">
+            👤
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold text-white" id="user-name">Carregando...</h2>
+            <p class="text-emerald-100" id="user-email">email@example.com</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- CORPO DO CARD -->
+      <div class="p-6 space-y-6">
+
+        <!-- INFORMAÇÕES BÁSICAS -->
+        <div>
+          <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+            <span>📋</span>
+            Informações Básicas
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-slate-900 p-4 rounded-lg">
+              <div class="text-sm text-slate-400 mb-1">Nome Completo</div>
+              <div class="font-medium" id="display-nome">-</div>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-lg">
+              <div class="text-sm text-slate-400 mb-1">Email</div>
+              <div class="font-medium" id="display-email">-</div>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-lg">
+              <div class="text-sm text-slate-400 mb-1">Departamento</div>
+              <div class="font-medium" id="display-departamento">-</div>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-lg">
+              <div class="text-sm text-slate-400 mb-1">Cargo</div>
+              <div class="font-medium" id="display-cargo">-</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PERFIS DE ACESSO -->
+        <div>
+          <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+            <span>🔐</span>
+            Perfis de Acesso
+          </h3>
+          <div class="bg-slate-900 p-4 rounded-lg">
+            <div class="text-sm text-slate-400 mb-2">Seus perfis:</div>
+            <div id="user-perfis" class="flex gap-2 flex-wrap">
+              <!-- Preenchido via JS -->
+            </div>
+          </div>
+          <div class="bg-slate-900 p-4 rounded-lg mt-4" id="admin-badge-container" style="display:none;">
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">👑</span>
+              <div>
+                <div class="font-bold text-red-400">Administrador do Sistema</div>
+                <div class="text-sm text-slate-400">Você tem acesso completo ao sistema</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SEGURANÇA -->
+        <div>
+          <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+            <span>🔒</span>
+            Segurança
+          </h3>
+          <div class="space-y-3">
+            <div class="bg-slate-900 p-4 rounded-lg flex justify-between items-center">
+              <div>
+                <div class="font-medium">Senha</div>
+                <div class="text-sm text-slate-400">••••••••</div>
+              </div>
+              <a href="/auth/change-password" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm">
+                Alterar Senha
+              </a>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-lg">
+              <div class="font-medium mb-1">Último Login</div>
+              <div class="text-sm text-slate-400" id="display-ultimo-login">-</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MÓDULOS ACESSÍVEIS -->
+        <div>
+          <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+            <span>📦</span>
+            Módulos que Você Tem Acesso
+          </h3>
+          <div id="modulos-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <!-- Preenchido via JS -->
+            <div class="col-span-full text-center text-slate-400 py-4">
+              Carregando módulos...
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+<script>
+const token = localStorage.getItem('access_token');
+if (!token) {
+  window.location.href = '/';
+}
+
+// Carregar dados do usuário
+async function loadUserProfile() {
+  try {
+    const response = await fetch('/api/auth/me', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) throw new Error('Sessão inválida');
+
+    const user = await response.json();
+
+    // Preencher informações
+    document.getElementById('user-name').textContent = user.nome_completo;
+    document.getElementById('user-email').textContent = user.email;
+    document.getElementById('display-nome').textContent = user.nome_completo;
+    document.getElementById('display-email').textContent = user.email;
+    document.getElementById('display-departamento').textContent = user.departamento || 'Não informado';
+    document.getElementById('display-cargo').textContent = user.cargo || 'Não informado';
+    document.getElementById('display-ultimo-login').textContent = user.ultimo_login ? 
+      new Date(user.ultimo_login).toLocaleString('pt-BR') : 'Primeiro acesso';
+
+    // Perfis
+    const cores = {
+      'admin': 'bg-red-600',
+      'direcao': 'bg-purple-600',
+      'gestor': 'bg-blue-600',
+      'auditor': 'bg-green-600',
+      'operacional': 'bg-yellow-600',
+      'loyal': 'bg-pink-600'
+    };
+
+    const perfisContainer = document.getElementById('user-perfis');
+    perfisContainer.innerHTML = user.perfis.map(p => 
+      `<span class="px-3 py-1 ${cores[p] || 'bg-gray-600'} text-white text-sm rounded-full">${p.toUpperCase()}</span>`
+    ).join('');
+
+    // Badge de admin
+    if (user.is_admin) {
+      document.getElementById('admin-badge-container').style.display = 'block';
+    }
+
+    // Carregar módulos
+    loadModules();
+
+  } catch (error) {
+    console.error('Erro:', error);
+    alert('Sessão expirada. Faça login novamente.');
+    logout();
+  }
+}
+
+// Carregar módulos acessíveis
+async function loadModules() {
+  try {
+    const response = await fetch('/api/auth/my-modules', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) throw new Error('Erro ao carregar módulos');
+
+    const modulos = await response.json();
+    const container = document.getElementById('modulos-list');
+
+    if (modulos.length === 0) {
+      container.innerHTML = '<div class="col-span-full text-center text-slate-400 py-4">Nenhum módulo disponível</div>';
+      return;
+    }
+
+    container.innerHTML = modulos.map(m => `
+      <div class="bg-slate-900 p-4 rounded-lg hover:bg-slate-700 transition">
+        <div class="text-2xl mb-2">${m.icone || '📋'}</div>
+        <div class="font-medium text-sm">${m.nome}</div>
+      </div>
+    `).join('');
+
+  } catch (error) {
+    console.error('Erro ao carregar módulos:', error);
+  }
+}
+
+function logout() {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('user');
+  window.location.href = '/';
+}
+
+// Carregar ao iniciar
+loadUserProfile();
+</script>
+
+</body>
+</html>

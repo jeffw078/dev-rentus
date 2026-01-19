@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <title>Mapa do Site • Rentus</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-900 text-slate-200 min-h-screen">
+
+  <!-- HEADER -->
+  <div class="bg-slate-800 border-b border-slate-700 px-6 py-4">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <a href="/index" class="text-slate-400 hover:text-slate-200">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+        </a>
+        <h1 class="text-2xl font-bold text-slate-100">🗺️ Mapa do Site</h1>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-sm text-slate-400" id="user-name"></span>
+        <button onclick="logout()" class="px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-sm">
+          Sair
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTAINER -->
+  <div class="max-w-7xl mx-auto p-6">
+
+    <!-- INTRODUÇÃO -->
+    <div class="bg-gradient-to-r from-emerald-900/20 to-blue-900/20 border border-emerald-700/50 rounded-xl p-6 mb-8">
+      <h2 class="text-xl font-bold text-emerald-400 mb-2">📍 Navegação Rápida</h2>
+      <p class="text-slate-300">
+        Esta página contém links para todas as áreas disponíveis no Rentus Analyzer.
+        Use-a como referência rápida para acessar qualquer módulo ou funcionalidade.
+      </p>
+    </div>
+
+    <!-- PÁGINAS PRINCIPAIS -->
+    <div class="mb-8">
+      <h2 class="text-xl font-bold text-slate-100 mb-4 flex items-center gap-2">
+        <span class="text-2xl">🏠</span> Páginas Principais
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        
+        <a href="/index" class="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-emerald-600 hover:bg-slate-750 transition group">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="text-3xl">🏠</span>
+            <div>
+              <h3 class="font-semibold text-slate-100 group-hover:text-emerald-400">Dashboard Principal</h3>
+              <p class="text-xs text-slate-400">Visão geral do sistema</p>
+            </div>
+          </div>
+        </a>
+
+        <a href="/dashboard" class="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-emerald-600 hover:bg-slate-750 transition group">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="text-3xl">📊</span>
+            <div>
+              <h3 class="font-semibold text-slate-100 group-hover:text-emerald-400">Dashboard Geral</h3>
+              <p class="text-xs text-slate-400">Análises e métricas gerais</p>
+            </div>
+          </div>
+        </a>
+
+        <a href="/auth/profile" class="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-emerald-600 hover:bg-slate-750 transition group">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="text-3xl">👤</span>
+            <div>
+              <h3 class="font-semibold text-slate-100 group-hover:text-emerald-400">Meu Perfil</h3>
+              <p class="text-xs text-slate-400">Informações da conta</p>
+            </div>
+          </div>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- MÓDULOS -->
+    <div class="mb-8">
+      <h2 class="text-xl font-bold text-slate-100 mb-4 flex items-center gap-2">
+        <span class="text-2xl">📦</span> Módulos de Análise
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- Módulo 1 -->
+        <a href="/modulo1" class="bg-slate-800 border border-slate-700 rounded-xl p-4 hover:border-blue-600 hover:bg-slate-750 transition group">
+          <div class="text-center">
+            <div class="text-3xl mb-2">📋</div>
+            <h3 class="font-semibold text-slate-100 group-hover:text-blue-400 mb-1">Módulo 1</h3>
+            <p class="text-xs text-slate-400">OPS/Demitidos</p>
+          </div>
+        </a>
+
+        <!-- Módulo 2 -->
+        <a href="/modulo2" class="bg-slate-800 border border-slate-700 rounded-xl p-4 hover:border-blue-600 hover:bg-slate-750 transition group">
+          <div class="text-center">
+            <div class="text-3xl mb-2">📄</div>
+            <h3 class="font-semibold text-slate-100 group-hover:text-blue-400 mb-1">Módulo 2</h3>
+            <p class="text-xs text-slate-400">NFe/Suprimentos</p>
+          </div>
+        </a>
+
+        <!-- Módulo 2 Dashboard -->
+        <a href="/modulo2/dashboard" class="bg-slate-800 border border-blue-700 rounded-xl p-4 hover:border-blue-500 hover:bg-slate-750 transition group">
+          <div class="text-center">
+            <div class="text-3xl mb-2">📊</div>
+            <h3 class="font-semibold text-slate-100 group-hover:text-blue-400 mb-1">Dashboard M2</h3>
+            <p class="text-xs text-slate-400">Análises NFe</p>
+          </div>
+        </a>
+
+        <!-- Módulos 3-16 -->
+        <a href="/modulo3" class="bg-slate-800 border border-slate-700 rounded-xl p-4 hover:border-blue-600 hover:bg-slate-750 transition group">
+          <div class="text-center">
+            <div class="text-3xl mb-2">📦</div>
+            <h3 class="font-semibold text-slate-100 group-hover:text-blue-400 mb-1">Módulo 3</h3>
+            <p class="text-xs text-slate-400">Em desenvolvimento</p>
+          </div>
+        </a>
+
+        <a href="/modulo4" class="bg-slate-800 border border-slate-700 rounded-xl p-4 hover:border-blue-600 hover:bg-slate-750 transition group">
+          <div class="text-center">
+            <div class="text-3xl mb-2">📦</div>
+            <h3 class="font-semibold text-slate-100 group-hover:text-blue-400 mb-1">Módulo 4</h3>
+            <p class="text-xs text-slate-400">Em desenvolvimento</p>
+          </div>
+        </a>
+
+        <a href="/modulo5" class="bg-slate-800 border border-slate-700 rounded-xl p-4 hover:border-blue-600 hover:bg-slate-750 transition group">
+          <div class="text-center">
+            <div class="text-3xl mb-2">📦</div>
+            <h3 class="font-semibold text-slate-100 group-hover:text-blue-400 mb-1">Módulo 5</h3>
+            <p class="text-xs text-slate-400">Em desenvolvimento</p>
+          </div>
+        </a>
+
+        <a href="/modulo6" class="bg-slate-800 border border-slate-700 rounded-xl p-4 hover:border-blue-600 hover:bg-slate-750 transition group">
+          <div class="text-center">
+            <div class="text-3xl mb-2">📦</div>
+            <h3 class="font-semibold text-slate-100 group-hover:text-blue-400 mb-1">Módulo 6</h3>
+            <p class="text-xs text-slate-400">Em desenvolvimento</p>
+          </div>
+        </a>
+
+        <a href="/modulo7" class="bg-slate-800 border border-slate-700 rounded-xl p-4 hover:border-blue-600 hover:bg-slate-750 transition group">
+          <div class="text-center">
+            <div class="text-3xl mb-2">📦</div>
+            <h3 class="font-semibold text-slate-100 group-hover:text-blue-400 mb-1">Módulo 7</h3>
+            <p class="text-xs text-slate-400">Em desenvolvimento</p>
+          </div>
+        </a>
+
+        <a href="/modulo8" class="bg-slate-800 border border-slate-700 rounded-xl p-4 hover:border-blue-600 hover:bg-slate-750 transition group">
+          <div class="text-center">
+            <div class="text-3xl mb-2">📦</div>
+            <h3 class="font-semibold text-slate-100 group-hover:text-blue-400 mb-1">Módulo 8</h3>
+            <p class="text-xs text-slate-400">Em desenvolvimento</p>
+          </div>
+        </a>
+
+        <a href="/modulo9" class="bg-slate-800 border border-slate-700 rounded-xl p-4 hover:border-blue-600 hover:bg-slate-750 transition group">
+          <div class="text-center">
+            <div class="text-3xl mb-2">📦</div>
+            <h3 class="font-semibold text-slate-100 group-hover:text-blue-400 mb-1">Módulo 9</h3>
+            <p class="text-xs text-slate-400">Em desenvolvimento</p>
+          </div>
+        </a>
+
+        <a href="/modulo10" class="bg-slate-800 border border-slate-700 rounded-xl p-4 hover:border-blue-600 hover:bg-slate-750 transition group">
+          <div class="text-center">
+            <div class="text-3xl mb-2">📦</div>
+            <h3 class="font-semibold text-slate-100 group-hover:text-blue-400 mb-1">Módulo 10</h3>
+            <p class="text-xs text-slate-400">Em desenvolvimento</p>
+          </div>
+        </a>
+
+        <a href="/modulo11" class="bg-slate-800 border border-slate-700 rounded-xl p-4 hover:border-blue-600 hover:bg-slate-750 transition group">
+          <div class="text-center">
+            <div class="text-3xl mb-2">📦</div>
+            <h3 class="font-semibold text-slate-100 group-hover:text-blue-400 mb-1">Módulo 11</h3>
+            <p class="text-xs text-slate-400">Em desenvolvimento</p>
+          </div>
+        </a>
+
+        <a href="/modulo12" class="bg-slate-800 border border-slate-700 rounded-xl p-4 hover:border-blue-600 hover:bg-slate-750 transition group">
+          <div class="text-center">
+            <div class="text-3xl mb-2">📦</div>
+            <h3 class="font-semibold text-slate-100 group-hover:text-blue-400 mb-1">Módulo 12</h3>
+            <p class="text-xs text-slate-400">Em desenvolvimento</p>
+          </div>
+        </a>
+
+        <a href="/modulo13" class="bg-slate-800 border border-slate-700 rounded-xl p-4 hover:border-blue-600 hover:bg-slate-750 transition group">
+          <div class="text-center">
+            <div class="text-3xl mb-2">📦</div>
+            <h3 class="font-semibold text-slate-100 group-hover:text-blue-400 mb-1">Módulo 13</h3>
+            <p class="text-xs text-slate-400">Em desenvolvimento</p>
+          </div>
+        </a>
+
+        <a href="/modulo14" class="bg-slate-800 border border-slate-700 rounded-xl p-4 hover:border-blue-600 hover:bg-slate-750 transition group">
+          <div class="text-center">
+            <div class="text-3xl mb-2">📦</div>
+            <h3 class="font-semibold text-slate-100 group-hover:text-blue-400 mb-1">Módulo 14</h3>
+            <p class="text-xs text-slate-400">Em desenvolvimento</p>
+          </div>
+        </a>
+
+        <a href="/modulo15" class="bg-slate-800 border border-slate-700 rounded-xl p-4 hover:border-blue-600 hover:bg-slate-750 transition group">
+          <div class="text-center">
+            <div class="text-3xl mb-2">📦</div>
+            <h3 class="font-semibold text-slate-100 group-hover:text-blue-400 mb-1">Módulo 15</h3>
+            <p class="text-xs text-slate-400">Em desenvolvimento</p>
+          </div>
+        </a>
+
+        <a href="/modulo16" class="bg-slate-800 border border-slate-700 rounded-xl p-4 hover:border-blue-600 hover:bg-slate-750 transition group">
+          <div class="text-center">
+            <div class="text-3xl mb-2">📦</div>
+            <h3 class="font-semibold text-slate-100 group-hover:text-blue-400 mb-1">Módulo 16</h3>
+            <p class="text-xs text-slate-400">Em desenvolvimento</p>
+          </div>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- ADMINISTRAÇÃO -->
+    <div class="mb-8" data-require-admin>
+      <h2 class="text-xl font-bold text-slate-100 mb-4 flex items-center gap-2">
+        <span class="text-2xl">⚙️</span> Administração
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        
+        <a href="/admin/users" class="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-purple-600 hover:bg-slate-750 transition group">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="text-3xl">👥</span>
+            <div>
+              <h3 class="font-semibold text-slate-100 group-hover:text-purple-400">Gestão de Usuários</h3>
+              <p class="text-xs text-slate-400">Criar, editar e gerenciar usuários</p>
+            </div>
+          </div>
+        </a>
+
+        <a href="/admin/audit-log" class="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-purple-600 hover:bg-slate-750 transition group">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="text-3xl">📋</span>
+            <div>
+              <h3 class="font-semibold text-slate-100 group-hover:text-purple-400">Logs de Auditoria</h3>
+              <p class="text-xs text-slate-400">Histórico de ações do sistema</p>
+            </div>
+          </div>
+        </a>
+
+        <a href="/teste-acesso" class="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-purple-600 hover:bg-slate-750 transition group">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="text-3xl">🔐</span>
+            <div>
+              <h3 class="font-semibold text-slate-100 group-hover:text-purple-400">Teste de Acesso</h3>
+              <p class="text-xs text-slate-400">Visualizar níveis de permissão</p>
+            </div>
+          </div>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- AUTENTICAÇÃO -->
+    <div class="mb-8">
+      <h2 class="text-xl font-bold text-slate-100 mb-4 flex items-center gap-2">
+        <span class="text-2xl">🔐</span> Autenticação
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        
+        <a href="/auth/change-password" class="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-yellow-600 hover:bg-slate-750 transition group">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="text-3xl">🔑</span>
+            <div>
+              <h3 class="font-semibold text-slate-100 group-hover:text-yellow-400">Alterar Senha</h3>
+              <p class="text-xs text-slate-400">Modificar sua senha de acesso</p>
+            </div>
+          </div>
+        </a>
+
+        <a href="/" class="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-yellow-600 hover:bg-slate-750 transition group">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="text-3xl">🚪</span>
+            <div>
+              <h3 class="font-semibold text-slate-100 group-hover:text-yellow-400">Login</h3>
+              <p class="text-xs text-slate-400">Página de autenticação</p>
+            </div>
+          </div>
+        </a>
+
+        <button onclick="logout()" class="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-red-600 hover:bg-slate-750 transition group text-left">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="text-3xl">🚫</span>
+            <div>
+              <h3 class="font-semibold text-slate-100 group-hover:text-red-400">Sair do Sistema</h3>
+              <p class="text-xs text-slate-400">Fazer logout</p>
+            </div>
+          </div>
+        </button>
+
+      </div>
+    </div>
+
+    <!-- INFORMAÇÕES -->
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
+      <h3 class="font-semibold text-slate-100 mb-3">ℹ️ Informações</h3>
+      <div class="space-y-2 text-sm text-slate-300">
+        <p><strong>Usuário:</strong> <span id="user-info"></span></p>
+        <p><strong>Perfis:</strong> <span id="user-profiles"></span></p>
+        <p><strong>Acesso:</strong> <span id="user-access"></span></p>
+        <p class="text-xs text-slate-500 mt-4">
+          💡 Dica: Adicione esta página aos favoritos para acesso rápido a todas as funcionalidades.
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+<script src="/static/auth.js"></script>
+<script src="/static/permissions.js"></script>
+<script>
+// Carregar informações do usuário
+const user = JSON.parse(localStorage.getItem("user") || "{}");
+document.getElementById("user-name").textContent = user.nome_completo || user.email || "";
+document.getElementById("user-info").textContent = `${user.nome_completo || "N/A"} (${user.email || "N/A"})`;
+document.getElementById("user-profiles").textContent = user.perfis ? user.perfis.join(", ") : "N/A";
+document.getElementById("user-access").textContent = user.is_admin ? "Administrador" : "Usuário Padrão";
+
+// Função de logout
+function logout() {
+  if (confirm("Deseja realmente sair do sistema?")) {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("user");
+    window.location.href = "/";
+  }
+}
+</script>
+
+</body>
+</html>

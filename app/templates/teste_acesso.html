@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rentus • Teste de Controle de Acesso</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-900 text-slate-200 min-h-screen">
+
+  <!-- HEADER -->
+  <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50">
+    <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+      <div class="flex items-center gap-4">
+        <img src="/static/images/logo.png" alt="Rentus" class="h-10">
+        <h1 class="text-xl font-bold">Teste de Controle de Acesso</h1>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="text-right">
+          <div class="text-sm text-slate-400">Logado como:</div>
+          <div class="font-medium" id="user-display">Carregando...</div>
+        </div>
+        <button onclick="logout()" class="px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-sm">
+          Sair
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main class="container mx-auto px-6 py-8">
+    
+    <!-- DESCRIÇÃO -->
+    <div class="bg-blue-900/30 border border-blue-700 rounded-lg p-4 mb-8">
+      <h2 class="text-lg font-bold text-blue-400 mb-2">🧪 Página de Teste</h2>
+      <p class="text-sm text-slate-300">
+        Esta página demonstra o sistema de controle de acesso. 
+        Dependendo do seu perfil, você verá caixinhas diferentes abaixo.
+      </p>
+      <p class="text-xs text-slate-400 mt-2">
+        <strong>Usuários de teste:</strong>
+        admin/admin, direcao/direcao, gestor/gestor, auditor/auditor, operacional/operacional, loyal/loyal
+      </p>
+    </div>
+
+    <!-- INFORMAÇÕES DO USUÁRIO -->
+    <div class="bg-slate-800 rounded-xl shadow-lg p-6 mb-8">
+      <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+        <span class="text-2xl">👤</span>
+        Informações do Usuário
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div>
+          <span class="text-slate-400">Email:</span>
+          <span class="ml-2 font-medium" id="user-email">-</span>
+        </div>
+        <div>
+          <span class="text-slate-400">Nome:</span>
+          <span class="ml-2 font-medium" id="user-name">-</span>
+        </div>
+        <div>
+          <span class="text-slate-400">Perfil Principal:</span>
+          <span class="ml-2 font-medium" id="user-perfil">-</span>
+        </div>
+        <div>
+          <span class="text-slate-400">Admin:</span>
+          <span class="ml-2 font-medium" id="user-admin">-</span>
+        </div>
+        <div class="md:col-span-2">
+          <span class="text-slate-400">Perfis:</span>
+          <span class="ml-2" id="user-perfis">-</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CAIXINHAS DE PERFIL -->
+    <div class="space-y-4">
+      <h3 class="text-xl font-bold mb-4">📦 Visibilidade por Perfil</h3>
+
+      <!-- ADMIN -->
+      <div id="box-admin" class="hidden bg-gradient-to-r from-red-900/50 to-red-800/30 border-2 border-red-600 rounded-xl p-6">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-3xl">👑</span>
+          <h4 class="text-xl font-bold text-red-400">ADMIN - Administrador</h4>
+        </div>
+        <p class="text-slate-300 mb-3">
+          Você tem acesso completo ao sistema, incluindo painel administrativo e gestão de usuários.
+        </p>
+        <div class="flex gap-2 flex-wrap">
+          <span class="px-3 py-1 bg-red-700 text-white text-xs rounded-full">Gestão de Usuários</span>
+          <span class="px-3 py-1 bg-red-700 text-white text-xs rounded-full">Logs e Auditoria</span>
+          <span class="px-3 py-1 bg-red-700 text-white text-xs rounded-full">Configurações</span>
+          <span class="px-3 py-1 bg-red-700 text-white text-xs rounded-full">Todos os Módulos</span>
+        </div>
+      </div>
+
+      <!-- DIREÇÃO -->
+      <div id="box-direcao" class="hidden bg-gradient-to-r from-purple-900/50 to-purple-800/30 border-2 border-purple-600 rounded-xl p-6">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-3xl">🎯</span>
+          <h4 class="text-xl font-bold text-purple-400">DIREÇÃO</h4>
+        </div>
+        <p class="text-slate-300 mb-3">
+          Acesso apenas aos dashboards para visualização de resultados (sem dados pendentes).
+        </p>
+        <div class="flex gap-2 flex-wrap">
+          <span class="px-3 py-1 bg-purple-700 text-white text-xs rounded-full">Dashboard Geral</span>
+          <span class="px-3 py-1 bg-purple-700 text-white text-xs rounded-full">Visualizar Módulos</span>
+          <span class="px-3 py-1 bg-purple-700 text-white text-xs rounded-full">Relatórios</span>
+        </div>
+      </div>
+
+      <!-- GESTOR -->
+      <div id="box-gestor" class="hidden bg-gradient-to-r from-blue-900/50 to-blue-800/30 border-2 border-blue-600 rounded-xl p-6">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-3xl">📊</span>
+          <h4 class="text-xl font-bold text-blue-400">GESTOR/SUPERVISOR</h4>
+        </div>
+        <p class="text-slate-300 mb-3">
+          Acesso aos dashboards para visualização de resultados (sem dados pendentes).
+        </p>
+        <div class="flex gap-2 flex-wrap">
+          <span class="px-3 py-1 bg-blue-700 text-white text-xs rounded-full">Dashboard Geral</span>
+          <span class="px-3 py-1 bg-blue-700 text-white text-xs rounded-full">Visualizar Módulos</span>
+          <span class="px-3 py-1 bg-blue-700 text-white text-xs rounded-full">Relatórios</span>
+        </div>
+      </div>
+
+      <!-- AUDITOR -->
+      <div id="box-auditor" class="hidden bg-gradient-to-r from-green-900/50 to-green-800/30 border-2 border-green-600 rounded-xl p-6">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-3xl">🔍</span>
+          <h4 class="text-xl font-bold text-green-400">AUDITOR</h4>
+        </div>
+        <p class="text-slate-300 mb-3">
+          Acesso ao dashboard com possibilidade de correção e encaminhamento de demandas.
+        </p>
+        <div class="flex gap-2 flex-wrap">
+          <span class="px-3 py-1 bg-green-700 text-white text-xs rounded-full">Dashboard</span>
+          <span class="px-3 py-1 bg-green-700 text-white text-xs rounded-full">Corrigir Dados</span>
+          <span class="px-3 py-1 bg-green-700 text-white text-xs rounded-full">Encaminhar Demandas</span>
+          <span class="px-3 py-1 bg-green-700 text-white text-xs rounded-full">Exportar</span>
+        </div>
+      </div>
+
+      <!-- OPERACIONAL -->
+      <div id="box-operacional" class="hidden bg-gradient-to-r from-yellow-900/50 to-yellow-800/30 border-2 border-yellow-600 rounded-xl p-6">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-3xl">⚙️</span>
+          <h4 class="text-xl font-bold text-yellow-400">OPERACIONAL</h4>
+        </div>
+        <p class="text-slate-300 mb-3">
+          Realiza correções de dados que não foram possíveis tratar automaticamente.
+        </p>
+        <div class="flex gap-2 flex-wrap">
+          <span class="px-3 py-1 bg-yellow-700 text-white text-xs rounded-full">Dashboard</span>
+          <span class="px-3 py-1 bg-yellow-700 text-white text-xs rounded-full">Corrigir Dados</span>
+          <span class="px-3 py-1 bg-yellow-700 text-white text-xs rounded-full">Visualizar Módulos</span>
+        </div>
+      </div>
+
+      <!-- LOYAL -->
+      <div id="box-loyal" class="hidden bg-gradient-to-r from-pink-900/50 to-pink-800/30 border-2 border-pink-600 rounded-xl p-6">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-3xl">💎</span>
+          <h4 class="text-xl font-bold text-pink-400">LOYAL</h4>
+        </div>
+        <p class="text-slate-300 mb-3">
+          Categoria especial com acesso específico personalizado.
+        </p>
+        <div class="flex gap-2 flex-wrap">
+          <span class="px-3 py-1 bg-pink-700 text-white text-xs rounded-full">Acesso Especial</span>
+          <span class="px-3 py-1 bg-pink-700 text-white text-xs rounded-full">Módulos Loyal</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- VOLTAR -->
+    <div class="mt-8">
+      <a href="/index" class="inline-block px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg">
+        ← Voltar ao Dashboard
+      </a>
+    </div>
+
+  </main>
+
+<script>
+// Verificar autenticação
+const token = localStorage.getItem('access_token');
+if (!token) {
+  window.location.href = '/';
+}
+
+// Carregar informações do usuário
+async function loadUserInfo() {
+  try {
+    const response = await fetch('/api/auth/me', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Sessão expirada');
+    }
+
+    const user = await response.json();
+
+    // Preencher informações
+    document.getElementById('user-display').textContent = user.nome_completo;
+    document.getElementById('user-email').textContent = user.email;
+    document.getElementById('user-name').textContent = user.nome_completo;
+    document.getElementById('user-perfil').textContent = user.perfil_principal;
+    document.getElementById('user-admin').textContent = user.is_admin ? '✅ Sim' : '❌ Não';
+    
+    // Perfis (com badges coloridos)
+    const perfisContainer = document.getElementById('user-perfis');
+    const cores = {
+      'admin': 'bg-red-600',
+      'direcao': 'bg-purple-600',
+      'gestor': 'bg-blue-600',
+      'auditor': 'bg-green-600',
+      'operacional': 'bg-yellow-600',
+      'loyal': 'bg-pink-600'
+    };
+    
+    perfisContainer.innerHTML = user.perfis.map(p => 
+      `<span class="px-2 py-1 ${cores[p] || 'bg-gray-600'} text-white text-xs rounded-full">${p.toUpperCase()}</span>`
+    ).join(' ');
+
+    // Mostrar caixinhas relevantes
+    user.perfis.forEach(perfil => {
+      const box = document.getElementById(`box-${perfil}`);
+      if (box) {
+        box.classList.remove('hidden');
+      }
+    });
+
+    // Se for admin, mostrar caixinha de admin
+    if (user.is_admin) {
+      document.getElementById('box-admin').classList.remove('hidden');
+    }
+
+  } catch (error) {
+    console.error('Erro ao carregar usuário:', error);
+    alert('Sessão expirada. Faça login novamente.');
+    logout();
+  }
+}
+
+function logout() {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('user');
+  window.location.href = '/';
+}
+
+// Carregar ao iniciar
+loadUserInfo();
+</script>
+
+</body>
+</html>

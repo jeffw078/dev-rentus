@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <title>Rentus • Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-900 text-slate-200 min-h-screen flex items-center justify-center">
+
+  <div class="w-full max-w-md bg-slate-800 border border-slate-700
+              rounded-2xl shadow-xl p-8 space-y-6">
+
+    <!-- LOGO -->
+    <div class="flex flex-col items-center gap-4">
+      <img src="/static/images/logo.png" alt="Rentus" class="h-50">
+      <span class="text-slate-400 text-sm">
+        Seja bem vindo(a)
+      </span>
+    </div>
+
+    <!-- FORM -->
+    <div class="space-y-4">
+
+      <!-- MODO TESTE: Dropdown de usuários -->
+      <div class="bg-yellow-900/20 border border-yellow-700 rounded-lg p-3 mb-4">
+        <div class="flex items-center gap-2 mb-2">
+          <svg class="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+          </svg>
+          <span class="text-yellow-500 text-xs font-medium">MODO TESTE</span>
+        </div>
+        <label class="text-xs text-yellow-300">Selecione um usuário de teste:</label>
+        <select
+          id="usuario-teste"
+          onchange="preencherUsuarioTeste()"
+          class="w-full mt-1 px-3 py-2 rounded-lg text-sm
+                 bg-slate-900 border border-yellow-700 text-slate-200
+                 focus:outline-none focus:ring-2 focus:ring-yellow-600"
+        >
+          <option value="">-- Selecione para preencher automaticamente --</option>
+          <option value="admin@rentus.com|admin">👑 Admin (Acesso Total)</option>
+          <option value="direcao@rentus.com|direcao">📊 Direção (Dashboards)</option>
+          <option value="gestor@rentus.com|gestor">👔 Gestor (Dashboards)</option>
+          <option value="auditor@rentus.com|auditores">🔍 Auditor (Correções)</option>
+          <option value="operacional@rentus.com|operacional">⚙️ Operacional (Correções)</option>
+          <option value="loyal@rentus.com|loyal">⭐ Loyal (Área Exclusiva)</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="text-sm text-slate-300">Email</label>
+        <input
+          id="email"
+          type="email"
+          placeholder="seu@email.com"
+          class="w-full mt-1 px-4 py-2 rounded-lg
+                 bg-slate-900 border border-slate-700
+                 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+        >
+      </div>
+
+      <div>
+        <label class="text-sm text-slate-300">Senha</label>
+        <input
+          id="senha"
+          type="password"
+          placeholder="••••••••"
+          class="w-full mt-1 px-4 py-2 rounded-lg
+                 bg-slate-900 border border-slate-700
+                 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+        >
+      </div>
+
+      <button
+        onclick="login()"
+        id="btn-login"
+        class="w-full bg-emerald-600 hover:bg-emerald-500
+               text-white py-2 rounded-lg font-medium shadow transition"
+      >
+        Entrar
+      </button>
+
+      <div
+        id="erro"
+        class="hidden text-red-400 text-sm text-center p-2 bg-red-900/20 rounded"
+      >
+        Usuário ou senha inválidos
+      </div>
+
+      <div
+        id="loading"
+        class="hidden text-center text-slate-400 text-sm"
+      >
+        <div class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-slate-400 border-t-transparent"></div>
+        <span class="ml-2">Autenticando...</span>
+      </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <div class="text-center text-xs text-slate-500 pt-2">
+      <div>Rentus Análises • Acesso interno</div>
+      <div class="mt-2">
+        <a href="/auth/forgot-password" class="text-emerald-600 hover:text-emerald-500">
+          Esqueceu sua senha?
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+<script>
+// Função para preencher campos com usuário de teste
+function preencherUsuarioTeste() {
+  const select = document.getElementById("usuario-teste");
+  const valor = select.value;
+  
+  if (valor) {
+    const [email, senha] = valor.split("|");
+    document.getElementById("email").value = email;
+    document.getElementById("senha").value = senha;
+    
+    // Focar no botão de login
+    document.getElementById("btn-login").focus();
+  } else {
+    // Limpar campos
+    document.getElementById("email").value = "";
+    document.getElementById("senha").value = "";
+  }
+}
+
+async function login() {
+  const email = document.getElementById("email").value.trim();
+  const senha = document.getElementById("senha").value;
+  const erro = document.getElementById("erro");
+  const loading = document.getElementById("loading");
+  const btnLogin = document.getElementById("btn-login");
+
+  // Validações básicas
+  if (!email || !senha) {
+    erro.textContent = "Por favor, preencha todos os campos";
+    erro.classList.remove("hidden");
+    return;
+  }
+
+  // Esconder mensagens anteriores
+  erro.classList.add("hidden");
+  loading.classList.remove("hidden");
+  btnLogin.disabled = true;
+
+  try {
+    // Fazer requisição para API
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ email, senha })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      // Login bem-sucedido
+      // Salvar token no localStorage
+      localStorage.setItem("access_token", data.access_token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      // Verificar se precisa trocar senha
+      if (data.deve_trocar_senha) {
+        window.location.href = "/auth/change-password";
+      } else {
+        window.location.href = "/index";
+      }
+    } else {
+      // Erro no login - mostrar mensagem específica e tratada
+      let errorMessage = "Email ou senha incorretos";
+      
+      // Tratar diferentes tipos de erro
+      if (data && typeof data === 'object') {
+        // Se tem mensagem de erro estruturada
+        if (data.error) {
+          // Erros customizados do backend
+          if (data.error === "bloqueado") {
+            errorMessage = data.message || "Usuário bloqueado por excesso de tentativas falhas. Aguarde 15 minutos.";
+          } else if (data.error === "inativo") {
+            errorMessage = "Usuário inativo. Contate o administrador.";
+          } else if (data.error === "senha_incorreta") {
+            errorMessage = data.message || "Senha incorreta. Tente novamente.";
+          } else {
+            errorMessage = data.message || "Erro ao fazer login";
+          }
+        } 
+        // Se tem detail (FastAPI padrão)
+        else if (data.detail) {
+          if (typeof data.detail === 'string') {
+            errorMessage = data.detail;
+          } else if (typeof data.detail === 'object') {
+            // Se detail é um objeto, tentar extrair mensagem
+            errorMessage = data.detail.message || data.detail.msg || "Erro ao fazer login";
+          }
+        }
+        // Se tem message diretamente
+        else if (data.message) {
+          errorMessage = data.message;
+        }
+      }
+      
+      // Exibir mensagem tratada
+      erro.textContent = errorMessage;
+      erro.classList.remove("hidden");
+      
+      // Limpar senha e focar
+      document.getElementById("senha").value = "";
+      document.getElementById("senha").focus();
+    }
+  } catch (error) {
+    console.error("Erro no login:", error);
+    erro.textContent = "Erro ao conectar com o servidor. Verifique sua conexão.";
+    erro.classList.remove("hidden");
+  } finally {
+    loading.classList.add("hidden");
+    btnLogin.disabled = false;
+  }
+}
+
+// Permitir login com Enter em ambos os campos
+document.addEventListener("DOMContentLoaded", () => {
+  const emailInput = document.getElementById("email");
+  const senhaInput = document.getElementById("senha");
+  
+  // Enter no campo de email
+  emailInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      login();
+    }
+  });
+  
+  // Enter no campo de senha
+  senhaInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      login();
+    }
+  });
+});
+</script>
+
+</body>
+</html>

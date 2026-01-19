@@ -1,209 +1,1619 @@
 <!DOCTYPE html>
 <html lang="pt-BR" class="dark">
 <head>
-  <meta charset="UTF-8">
-  <title>Dashboard – Suprimentos</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Rentus Análises — Suprimentos</title>
 
-  <!-- Tailwind (dev) -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- XLSX (OBRIGATÓRIO) -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/static/permissions.js"></script>
+
+  <style>
+    .sticky-head thead th{
+      position: sticky; top: 0;
+      background: #0f172a; z-index: 10;
+    }
+
+    .soft-scroll::-webkit-scrollbar { height: 10px; width: 10px; }
+    .soft-scroll::-webkit-scrollbar-thumb { background: rgba(148,163,184,.25); border-radius: 999px; }
+    .soft-scroll::-webkit-scrollbar-track { background: rgba(15,23,42,.35); }
+
+    .chart-wrap { 
+      height: 400px; 
+      min-width: 1200px;
+    }
+    
+    .chart-container {
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 50;
+    }
+    .modal-backdrop.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: #1e293b;
+      border: 1px solid #475569;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      max-width: 600px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    
+    /* Spinner de loading */
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .spinner {
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: #fff;
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    
+    /* Popup de sucesso */
+    .success-popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      border: 2px solid #10b981;
+      border-radius: 1rem;
+      padding: 2rem;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      z-index: 100;
+      min-width: 400px;
+      display: none;
+    }
+    .success-popup.show {
+      display: block;
+      animation: slideIn 0.3s ease-out;
+    }
+    @keyframes slideIn {
+      from {
+        transform: translate(-50%, -60%);
+        opacity: 0;
+      }
+      to {
+        transform: translate(-50%, -50%);
+        opacity: 1;
+      }
+    }
+  </style>
 </head>
 
-<body class="bg-slate-900 text-slate-200 min-h-screen">
+<body class="bg-slate-900 text-slate-200 min-h-screen flex flex-col">
+
+  <!-- BANNER MODO DEV (oculto por padrão, exibido via JS se DEV_MODE) -->
+  <div id="devModeBanner" class="hidden bg-amber-600 text-amber-950 text-center py-2 px-4 font-semibold text-sm">
+    ⚠️ MODO DESENVOLVIMENTO — Dados mockados (sem conexão real com SEFAZ)
+  </div>
 
  <!-- HEADER -->
- <header class="w-full flex items-center justify-center py-6 bg-slate-800 border-b border-slate-700 shadow-sm">
+  <header class="w-full flex items-center justify-between gap-4 py-4 px-6 bg-slate-800 border-b border-slate-700 shadow-sm">
   <div class="flex items-center gap-3">
     <img src="/static/images/logo.png" alt="Rentus" class="h-10">
-    <span class="text-2xl font-bold text-slate-200 tracking-tight">
-      Módulo 2 - Dashboard – Suprimentos
-    </span>
+      <div class="leading-tight">
+        <div class="text-xl font-bold">Rentus Análises</div>
+        <div class="text-xs text-slate-400 -mt-0.5">Suprimentos — NF-e por Cliente & Posto</div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3 flex-wrap">
+      <!-- Mensagem de Status (discreta) -->
+      <div id="statusMensagem" class="text-xs text-slate-300 px-3 py-1 rounded-full bg-slate-700/50 border border-slate-600/50 hidden">
+        <span id="statusTexto"></span>
+      </div>
+
+      <!-- Mensagem sobre coleta automática às 00:00 -->
+      <div class="flex items-center gap-2 border-r border-slate-600 pr-3">
+        <div class="text-xs text-slate-400">
+          <span class="font-medium">Coleta automática:</span>
+          <span id="msgColetaAutomatica" class="ml-1">Novos XMLs serão coletados às 00:00</span>
+        </div>
   </div>
-  <button
-      onclick="window.location.href='/index'"
-      class="px-4 py-2 rounded-full text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 shadow"
-    >
+
+      <!-- Botão Importar XMLs (habilitado apenas após 00:00) -->
+      <button id="btnImportarXmls" class="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white shadow disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+        Importar XMLs
+      </button>
+
+      <!-- Botão Importação Inicial (Dia 0) -->
+      <button id="btnImportacaoInicial" class="px-4 py-2 rounded-lg text-sm font-medium bg-purple-600 hover:bg-purple-500 text-white shadow">
+        Importação Inicial
+      </button>
+
+      <!-- Botão Logs/Debug
+      <button id="btnLogs" class="px-4 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-white border border-slate-600">
+        Logs/Debug
+      </button> -->
+
+      <button onclick="window.location.href='/index'" class="px-3 py-2 rounded-full text-sm bg-slate-700 hover:bg-slate-600 border border-slate-600">
       Voltar
     </button>
+    </div>
 </header>
 
-<main class="p-6 max-w-7xl mx-auto space-y-6">
+  <!-- CONTENT -->
+  <main class="flex-1 p-6 md:p-8 space-y-6">
+    
+    <!-- Barra de Progresso (Orçado vs Realizado) -->
+    <section class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5">
+      <div class="mb-3">
+        <div class="text-sm text-slate-400">Progresso</div>
+        <div class="text-lg font-semibold" id="progressTitulo">Orçado vs Realizado - Geral</div>
+      </div>
+      <div class="space-y-2">
+        <div class="flex justify-between text-sm flex-wrap gap-2">
+          <span class="text-slate-300">Orçado: <span id="valorOrcado" class="font-bold">R$ 0,00</span></span>
+          <span class="text-slate-300">Realizado: <span id="valorRealizado" class="font-bold">R$ 0,00</span></span>
+          <span class="text-slate-300">Status: <span id="valorStatus" class="font-bold">R$ 0,00</span></span>
+        </div>
+        <div class="w-full bg-slate-700 rounded-full h-6 overflow-hidden">
+          <div id="progressBar" class="h-full bg-gradient-to-r from-blue-500 to-emerald-500 flex items-center justify-center text-xs font-medium text-white transition-all duration-500" style="width: 0%">
+            0%
+          </div>
+        </div>
+      </div>
+    </section>
 
-  <!-- Upload XLSX -->
-  <div class="bg-slate-800 p-4 rounded flex items-center gap-4">
-    <input
-      type="file"
-      id="xlsxInput"
-      accept=".xlsx"
-      class="hidden"
-    >
+    <!-- Filtro de Data para Visualização -->
+    <section class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5">
+      <div class="flex items-center justify-between">
+        <div class="flex-1">
+          <div class="text-sm text-slate-400">Filtro de Visualização</div>
+          <div class="text-lg font-semibold">Filtrar por Data de Emissão</div>
+          <div class="text-xs text-slate-400 mt-1">Aplica filtro aos dados já carregados (pendências e gráficos)</div>
+          <!-- Cliente Selecionado -->
+          <div id="clienteSelecionadoInfo" class="hidden mt-2 px-3 py-1.5 bg-indigo-600/20 border border-indigo-500/50 rounded-lg inline-block">
+            <span class="text-xs text-slate-300">Cliente selecionado:</span>
+            <span class="text-sm font-semibold text-indigo-300 ml-1" id="clienteSelecionadoNome">—</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2">
+            <label class="text-xs text-slate-400">De:</label>
+            <input type="date" id="filtroDataIni" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm" />
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-xs text-slate-400">Até:</label>
+            <input type="date" id="filtroDataFim" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm" />
+          </div>
+          <button id="btnAplicarFiltro" class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-500 text-white shadow">
+            Aplicar Filtro
+          </button>
+          <button id="btnLimparFiltro" class="px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-white">
+            Limpar
+          </button>
+          <button id="btnVoltarGeralFiltro" class="hidden px-3 py-2 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-500 text-white">
+            Ver Todos
+          </button>
+        </div>
+      </div>
+    </section>
 
-    <button
-      onclick="document.getElementById('xlsxInput').click()"
-      class="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-lg"
-    >
-      Carregar XLSX
+    <!-- Gráfico de Colunas - Gastos por Cliente -->
+    <section class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5">
+      <div class="mb-3 flex items-center justify-between">
+        <div>
+          <div class="text-sm text-slate-400">Análise</div>
+          <div class="text-lg font-semibold" id="graficoTitulo">Gastos por Cliente</div>
+          <div class="text-xs text-slate-400 mt-1">Clique em uma coluna para filtrar por cliente</div>
+        </div>
+        <button id="btnVoltarGeral" class="hidden px-4 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-white">
+          Ver Todos os Clientes
     </button>
+      </div>
+      <div class="overflow-x-auto">
+        <div class="chart-wrap" style="min-width: 1200px; height: 400px;">
+          <canvas id="graficoPostos"></canvas>
+        </div>
+      </div>
+    </section>
 
-    <span id="xlsxFilename" class="text-slate-400 italic text-sm">
-      Nenhum arquivo selecionado
-    </span>
+    <!-- Tabela de Pendências -->
+    <!-- Ocultar para Direção e Gestor (apenas visualização de resultados) -->
+    <section data-hide-for-profiles="direcao,gestor" class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <div class="text-sm text-slate-400">Pendências / Correções</div>
+          <div class="text-lg font-semibold">NFes Pendentes de Identificação</div>
+          <div id="pendHint" class="text-xs text-slate-400 mt-1">NFes que não foram identificadas automaticamente</div>
+        </div>
   </div>
 
-  <!-- KPIs -->
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-    <div class="bg-slate-800 p-4 rounded">
-      <div class="text-slate-400 text-sm">Total gasto geral</div>
-      <div id="kpiTotal" class="text-2xl font-bold">—</div>
-    </div>
+      <div class="max-h-[420px] overflow-auto soft-scroll sticky-head">
+        <table class="w-full text-sm">
+          <thead class="text-slate-300">
+            <tr class="border-b border-slate-700">
+              <th class="text-left p-2">Chave NFe</th>
+              <th class="text-left p-2">Valor NFe</th>
+              <th class="text-left p-2">Fornecedor</th>
+              <th class="text-left p-2">Cliente</th>
+              <th class="text-left p-2">Posto de Trabalho</th>
+              <th class="text-center p-2">Ação</th>
+            </tr>
+          </thead>
+          <tbody id="tbPendencias">
+            <!-- Dados serão carregados via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-    <div class="bg-slate-800 p-4 rounded">
-      <div class="text-slate-400 text-sm">Empresas</div>
-      <div id="kpiEmpresas" class="text-2xl font-bold">—</div>
-    </div>
+    <!-- FILTROS (OCULTOS - COMENTADOS PARA USO FUTURO) -->
+    <!--
+    <section id="secFiltros" class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5 hidden">
+      <div class="flex flex-col lg:flex-row lg:items-end gap-4">
+        <div class="flex-1">
+          <div class="text-sm text-slate-400">Filtros</div>
+          <div class="text-lg font-semibold">Cliente → Posto → Fornecedor</div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full lg:w-auto">
+          <label class="block">
+            <span class="text-xs text-slate-400">Cliente</span>
+            <select id="clienteSelect" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">
+              <option value="">Todos</option>
+            </select>
+          </label>
+          <label class="block">
+            <span class="text-xs text-slate-400">Posto</span>
+            <select id="postoSelect" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">
+              <option value="">Todos</option>
+            </select>
+          </label>
+          <label class="block">
+            <span class="text-xs text-slate-400">Fornecedor</span>
+            <select id="fornecedorSelect" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">
+              <option value="">Todos</option>
+            </select>
+          </label>
+          <label class="block">
+            <span class="text-xs text-slate-400">Produto</span>
+            <input id="produtoInput" type="text" placeholder="Buscar produto..."
+              class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2" />
+          </label>
+        </div>
+      </div>
+    </section>
+    -->
 
-    <div class="bg-slate-800 p-4 rounded">
-      <div class="text-slate-400 text-sm">Produtos distintos</div>
-      <div id="kpiProdutos" class="text-2xl font-bold">—</div>
-    </div>
+    <!-- SEÇÕES ANTIGAS COMENTADAS (PARA REFERÊNCIA FUTURA) -->
+    <!--
+    <section id="secNF" class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5 hidden">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <div class="text-sm text-slate-400">Detalhamento</div>
+          <div class="text-lg font-semibold">Notas Fiscais (filtrado)</div>
+        </div>
+      </div>
+      <div class="max-h-[420px] overflow-auto soft-scroll sticky-head">
+        <table class="w-full text-sm">
+          <thead class="text-slate-300">
+            <tr class="border-b border-slate-700">
+              <th class="text-left p-2">Cliente</th>
+              <th class="text-left p-2">Posto</th>
+              <th class="text-left p-2">Fornecedor</th>
+              <th class="text-left p-2">Data</th>
+              <th class="text-right p-2">Valor NF</th>
+              <th class="text-left p-2">Chave</th>
+            </tr>
+          </thead>
+          <tbody id="tbNFs"></tbody>
+        </table>
+      </div>
+    </section>
 
-    <div class="bg-slate-800 p-4 rounded">
-      <div class="text-slate-400 text-sm">Linhas</div>
-      <div id="kpiLinhas" class="text-2xl font-bold">—</div>
+    <section id="secProdutos" class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5 hidden">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <div class="text-sm text-slate-400">Consolidação</div>
+          <div class="text-lg font-semibold">Produtos (filtrado)</div>
+        </div>
+      </div>
+      <div class="max-h-[420px] overflow-auto soft-scroll sticky-head">
+        <table class="w-full text-sm">
+          <thead class="text-slate-300">
+            <tr class="border-b border-slate-700">
+              <th class="text-left p-2">Produto</th>
+              <th class="text-right p-2">Qtd</th>
+              <th class="text-right p-2">Valor (R$)</th>
+              <th class="text-right p-2">ICMS</th>
+              <th class="text-right p-2">ICMS ST</th>
+              <th class="text-right p-2">IPI</th>
+              <th class="text-right p-2">PIS</th>
+              <th class="text-right p-2">COFINS</th>
+            </tr>
+          </thead>
+          <tbody id="tbProdutos"></tbody>
+        </table>
+      </div>
+    </section>
+    -->
+
+    <footer class="text-xs text-slate-500 px-2 pb-8">
+      Rentus — Dashboard Suprimentos (versão consolidada)
+    </footer>
+  </main>
+
+  <!-- MODAL PREVIEW IMPORTACAO -->
+  <div id="modalPreview" class="modal-backdrop">
+    <div class="modal-content">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Pré-visualização da Importação</h3>
+        <button onclick="fecharModalPreview()" class="text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
+      </div>
+      <div id="previewContent" class="space-y-4">
+        <!-- Conteúdo será preenchido via JavaScript -->
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button id="btnConfirmarImportacao" onclick="confirmarImportacao()" class="flex-1 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white shadow">
+          Confirmar Importação
+        </button>
+        <button onclick="fecharModalPreview()" class="px-4 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-white">
+          Cancelar
+        </button>
+      </div>
     </div>
   </div>
 
-  <!-- Gráficos -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <div class="bg-slate-800 p-4 rounded">
-      <h2 class="font-semibold mb-2">Gastos por dia</h2>
-      <canvas id="chartGastosDia"></canvas>
+  <!-- MODAL LOGS/DEBUG -->
+  <div id="modalLogs" class="modal-backdrop">
+    <div class="modal-content" style="max-width: 900px;">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Logs e Histórico de Importações</h3>
+        <button onclick="fecharModalLogs()" class="text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
+      </div>
+      <div id="logsContent" class="space-y-4">
+        <!-- Status do Scheduler -->
+        <div id="schedulerStatus" class="p-4 bg-slate-700/50 rounded-lg">
+          <div class="text-sm font-medium mb-2">Status do Agendador</div>
+          <div id="schedulerStatusContent" class="text-xs text-slate-300">Carregando...</div>
+        </div>
+        <!-- Histórico de Importações -->
+        <div>
+          <div class="text-sm font-medium mb-2">Histórico de Importações</div>
+          <div id="logsList" class="space-y-2 max-h-96 overflow-y-auto">
+            <div class="text-sm text-slate-400">Carregando...</div>
+          </div>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button onclick="fecharModalLogs()" class="px-4 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-white">
+          Fechar
+        </button>
+        <button onclick="carregarLogs(); carregarStatusScheduler();" class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-500 text-white shadow">
+          Atualizar
+        </button>
+      </div>
+    </div>
     </div>
 
-    <div class="bg-slate-800 p-4 rounded">
-      <h2 class="font-semibold mb-2">Compras por dia</h2>
-      <canvas id="chartComprasDia"></canvas>
+  <!-- Modal para Identificar NFe -->
+  <div id="modalIdentificar" class="modal-backdrop">
+    <div class="modal-content">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold">Identificar NFe</h3>
+        <button onclick="fecharModal()" class="text-2xl leading-none text-slate-400 hover:text-white">×</button>
     </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="text-xs text-slate-400">Chave NFe</label>
+          <div id="modalChave" class="mt-1 p-2 bg-slate-900 border border-slate-700 rounded-lg text-sm font-mono"></div>
+    </div>
+
+        <div>
+          <label class="text-xs text-slate-400">Valor NFe</label>
+          <div id="modalValor" class="mt-1 p-2 bg-slate-900 border border-slate-700 rounded-lg text-sm"></div>
+    </div>
+
+        <div>
+          <label class="text-xs text-slate-400">Fornecedor</label>
+          <div id="modalFornecedor" class="mt-1 p-2 bg-slate-900 border border-slate-700 rounded-lg text-sm"></div>
   </div>
 
-  <!-- Rankings -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div class="bg-slate-800 p-4 rounded">
-      <h2 class="font-semibold mb-2">Gasto por empresa</h2>
-      <ul id="listaEmpresas" class="text-sm space-y-1"></ul>
+        <div>
+          <label class="text-xs text-slate-400">Cliente</label>
+          <div id="modalCliente" class="mt-1 p-2 bg-slate-900 border border-slate-700 rounded-lg text-sm"></div>
     </div>
 
-    <div class="bg-slate-800 p-4 rounded">
-      <h2 class="font-semibold mb-2">Produtos por valor</h2>
-      <ul id="listaValor" class="text-sm space-y-1"></ul>
-    </div>
-
-    <div class="bg-slate-800 p-4 rounded">
-      <h2 class="font-semibold mb-2">Produtos por quantidade</h2>
-      <ul id="listaQuantidade" class="text-sm space-y-1"></ul>
-    </div>
+        <div>
+          <label class="text-xs text-slate-400">Posto de Trabalho Atual</label>
+          <div id="modalPostoAtual" class="mt-1 p-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-400 italic"></div>
   </div>
 
-</main>
+        <div>
+          <label class="text-xs text-slate-400 block mb-2">Selecionar Cliente</label>
+          <select id="selectCliente" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2">
+            <option value="">Selecione...</option>
+          </select>
+    </div>
+
+        <div>
+          <label class="text-xs text-slate-400 block mb-2">Selecionar Posto de Trabalho</label>
+          <select id="selectPosto" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2">
+            <option value="">Selecione...</option>
+          </select>
+    </div>
+
+        <div class="flex gap-3 pt-4">
+          <button onclick="salvarIdentificacao()" class="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium">
+            Salvar
+          </button>
+          <button onclick="fecharModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
 <script>
-let chartGastos, chartCompras;
+const BRL = new Intl.NumberFormat("pt-BR", { style:"currency", currency:"BRL" });
 
-const input = document.getElementById("xlsxInput");
-const fileLabel = document.getElementById("xlsxFilename");
+// Estado global
+let chartPostos = null;
+let nfeSelecionada = null;
+let dadosPostos = []; // Dados estáticos por enquanto
 
-input.addEventListener("change", async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+// Flag para evitar múltiplas inicializações
+let inicializado = false;
 
-  fileLabel.textContent = file.name;
+// Verificar modo DEV
+async function verificarModoDesenvolvimento() {
+  try {
+    const resp = await fetch('/api/modulo2/status');
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.dev_mode) {
+        document.getElementById('devModeBanner').classList.remove('hidden');
+      }
+    }
+  } catch (e) {
+    console.warn('[DEV] Não foi possível verificar modo:', e);
+  }
+}
 
-  const buffer = await file.arrayBuffer();
-  const wb = XLSX.read(buffer, { type: "array" });
-
-  let rows = [];
-  wb.SheetNames.forEach(name => {
-    rows = rows.concat(XLSX.utils.sheet_to_json(wb.Sheets[name]));
-  });
-
-  if (!rows.length) return;
-
-  // KPIs
-  const total = rows.reduce((s, r) => s + Number(r.total_linha || 0), 0);
-  document.getElementById("kpiTotal").textContent =
-    "R$ " + total.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
-
-  document.getElementById("kpiEmpresas").textContent =
-    new Set(rows.map(r => r.empresa_nome)).size;
-
-  document.getElementById("kpiProdutos").textContent =
-    new Set(rows.map(r => r.produto_descricao)).size;
-
-  document.getElementById("kpiLinhas").textContent = rows.length;
-
-  // Agregações
-  const porEmpresa = {};
-  const porProdutoValor = {};
-  const porProdutoQtd = {};
-  const porDiaValor = {};
-  const porDiaQtd = {};
-
-  rows.forEach(r => {
-    const v = Number(r.total_linha || 0);
-    const q = Number(r.quantidade || 0);
-    const d = r.data_geracao;
-
-    porEmpresa[r.empresa_nome] = (porEmpresa[r.empresa_nome] || 0) + v;
-    porProdutoValor[r.produto_descricao] = (porProdutoValor[r.produto_descricao] || 0) + v;
-    porProdutoQtd[r.produto_descricao] = (porProdutoQtd[r.produto_descricao] || 0) + q;
-    porDiaValor[d] = (porDiaValor[d] || 0) + v;
-    porDiaQtd[d] = (porDiaQtd[d] || 0) + 1;
-  });
-
-  renderList("listaEmpresas", porEmpresa, "R$");
-  renderList("listaValor", porProdutoValor, "R$");
-  renderList("listaQuantidade", porProdutoQtd, "");
-
-  renderChart("chartGastosDia", porDiaValor, "R$");
-  renderChart("chartComprasDia", porDiaQtd, "Qtd");
+// Inicialização
+document.addEventListener("DOMContentLoaded", () => {
+  if (inicializado) {
+    return; // Já foi inicializado
+  }
+  inicializado = true;
+  
+  // Verificar modo DEV
+  verificarModoDesenvolvimento();
+  
+  try {
+    // Carregar dados iniciais (com delay para garantir que DOM está pronto)
+    setTimeout(() => {
+      // Carregar dados iniciais sem filtro de data
+      carregarPendencias().catch(err => console.error("Erro ao carregar pendências:", err));
+      carregarPostosParaGrafico().catch(err => console.error("Erro ao carregar postos:", err));
+      // Não carregar clientes/postos aqui, apenas quando necessário (no modal)
+    }, 100);
+    
+    // Event listeners para filtros de data
+    document.getElementById("btnAplicarFiltro").addEventListener("click", aplicarFiltroData);
+    document.getElementById("btnLimparFiltro").addEventListener("click", limparFiltroData);
+    document.getElementById("btnVoltarGeral").addEventListener("click", () => {
+      clienteFiltrado = null;
+      // Ocultar nome do cliente na seção de filtro
+      const clienteInfoEl = document.getElementById("clienteSelecionadoInfo");
+      const clienteNomeEl = document.getElementById("clienteSelecionadoNome");
+      if (clienteInfoEl && clienteNomeEl) {
+        clienteInfoEl.classList.add("hidden");
+        clienteNomeEl.textContent = "—";
+      }
+      carregarPostosParaGrafico(
+        document.getElementById("filtroDataIni").value || null,
+        document.getElementById("filtroDataFim").value || null,
+        null
+      );
+    });
+    document.getElementById("btnVoltarGeralFiltro").addEventListener("click", () => {
+      clienteFiltrado = null;
+      limparFiltroData();
+    });
+  } catch (error) {
+    console.error("Erro na inicialização:", error);
+  }
 });
 
-function renderList(el, data, prefix){
-  const ul = document.getElementById(el);
-  ul.innerHTML = "";
-  Object.entries(data)
-    .sort((a,b)=>b[1]-a[1])
-    .slice(0,10)
-    .forEach(([k,v])=>{
-      ul.innerHTML += `<li>${k} — ${prefix} ${v.toLocaleString("pt-BR")}</li>`;
-    });
+// ===================== VERIFICAR STATUS DO SCHEDULER =====================
+async function verificarStatusScheduler() {
+  try {
+    const response = await fetch("/api/modulo2/scheduler/status");
+    if (!response.ok) return null;
+    const status = await response.json();
+    
+    // Atualizar mensagem sobre verificação automática
+    const msgColeta = document.getElementById("msgColetaAutomatica");
+    const btnImportar = document.getElementById("btnImportarXmls");
+    
+    if (msgColeta) {
+      // Verificar se há XMLs disponíveis
+      if (status.xmls_disponiveis && status.xmls_disponiveis > 0) {
+        // Há XMLs novos disponíveis!
+        msgColeta.innerHTML = `<span class="text-yellow-400 font-semibold">Foram encontrados ${status.xmls_disponiveis} novos XMLs, clique em Importar para baixar</span>`;
+        if (btnImportar) {
+          btnImportar.disabled = false;
+          btnImportar.classList.add("animate-pulse");
+        }
+      } else if (status.next_run) {
+        // Nenhum XML novo, mostrar próxima verificação
+        const nextRun = new Date(status.next_run);
+        const agora = new Date();
+        const diffMs = nextRun - agora;
+        const diffH = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffM = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        
+        if (diffMs > 0) {
+          msgColeta.textContent = `Próxima verificação em ${diffH}h ${diffM}m (às 00:00)`;
+        } else {
+          msgColeta.textContent = "Verificando novos XMLs...";
+        }
+        
+        if (btnImportar) {
+          btnImportar.disabled = true;
+          btnImportar.classList.remove("animate-pulse");
+        }
+      }
+    }
+    
+    return status;
+  } catch (error) {
+    console.error("Erro ao verificar status do scheduler:", error);
+    return null;
+  }
 }
 
-function renderChart(canvasId, data, label){
-  const ctx = document.getElementById(canvasId).getContext("2d");
-  const labels = Object.keys(data);
-  const values = Object.values(data);
+// Verificar status do scheduler a cada 1 minuto
+setInterval(verificarStatusScheduler, 60000);
+verificarStatusScheduler(); // Verificar imediatamente
 
-  if (canvasId === "chartGastosDia" && chartGastos) chartGastos.destroy();
-  if (canvasId === "chartComprasDia" && chartCompras) chartCompras.destroy();
+// ===================== PREVIEW E IMPORTAR XMLs =====================
+document.getElementById("btnImportarXmls").addEventListener("click", async () => {
+  const btn = document.getElementById("btnImportarXmls");
+  btn.disabled = true;
+  btn.textContent = "Carregando preview...";
 
-  const c = new Chart(ctx, {
+  try {
+    // Fazer preview primeiro
+    const previewResponse = await fetch("/api/modulo2/sefaz/preview");
+    if (!previewResponse.ok) {
+      throw new Error(`HTTP ${previewResponse.status}`);
+    }
+    const previewData = await previewResponse.json();
+    
+    if (previewData.status === "error") {
+      mostrarStatusMensagem(previewData.mensagem || "Erro ao fazer preview", "error");
+      return;
+    }
+    
+    // Mostrar modal de preview
+    mostrarModalPreview(previewData);
+    
+  } catch (error) {
+    console.error("Erro ao fazer preview:", error);
+    mostrarStatusMensagem("Erro ao carregar preview. Verifique o console.", "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Importar XMLs";
+  }
+});
+
+// Função para mostrar modal de preview
+function mostrarModalPreview(data) {
+  const modal = document.getElementById("modalPreview");
+  const content = document.getElementById("previewContent");
+  
+  const fornecedoresList = data.fornecedores && data.fornecedores.length > 0
+    ? data.fornecedores.map(f => `<li class="text-sm">${f.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`).join("")
+    : "<li class=\"text-sm text-slate-400\">Nenhum fornecedor encontrado</li>";
+  
+  content.innerHTML = `
+    <div class="space-y-3">
+      <div class="p-4 bg-slate-700/50 rounded-lg">
+        <div class="text-sm font-medium mb-2">Resumo da Importação</div>
+        <div class="space-y-1 text-sm">
+          <div><span class="text-slate-400">Quantidade de NFs:</span> <span class="font-semibold">${data.total_encontrado || 0}</span></div>
+          <div><span class="text-slate-400">Valor Total:</span> <span class="font-semibold">${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(data.valor_total || 0)}</span></div>
+          <div><span class="text-slate-400">Período:</span> <span class="font-semibold">${data.periodo?.descricao || "N/A"}</span></div>
+        </div>
+      </div>
+      <div class="p-4 bg-slate-700/50 rounded-lg">
+        <div class="text-sm font-medium mb-2">Fornecedores (${data.fornecedores?.length || 0})</div>
+        <ul class="list-disc list-inside space-y-1 max-h-32 overflow-y-auto">
+          ${fornecedoresList}
+        </ul>
+      </div>
+      <div class="text-xs text-slate-400 p-2 bg-blue-900/20 rounded border border-blue-700/30">
+        <strong>Nota:</strong> Esta importação usará apenas XMLs novos via NSU incremental. XMLs já importados serão ignorados automaticamente.
+      </div>
+    </div>
+  `;
+  
+  // Atualizar botão de confirmação
+  const btnConfirmar = document.getElementById("btnConfirmarImportacao");
+  if (btnConfirmar) {
+    btnConfirmar.removeAttribute("data-tipo");
+    btnConfirmar.textContent = "Confirmar Importação";
+    btnConfirmar.disabled = false;
+  }
+  
+  modal.classList.add("active");
+}
+
+// Função para fechar modal de preview
+function fecharModalPreview() {
+  document.getElementById("modalPreview").classList.remove("active");
+}
+
+// Função para confirmar importação
+async function confirmarImportacao() {
+  const btn = document.getElementById("btnConfirmarImportacao");
+  const tipo = btn.getAttribute("data-tipo");
+  
+  // Se for importação inicial, usar função específica
+  if (tipo === "inicial") {
+    return confirmarImportacaoInicial();
+  }
+  
+  btn.disabled = true;
+  btn.textContent = "Importando...";
+
+  try {
+    const response = await fetch("/api/modulo2/sefaz/importar", {
+      method: "POST"
+    });
+    const data = await response.json();
+    
+    if (data.success) {
+      mostrarStatusMensagem(`${data.total || 0} XMLs importados com sucesso`, "success");
+      fecharModalPreview();
+      carregarPendencias();
+      // carregarPostosParaGrafico() já atualiza o progresso automaticamente
+      await carregarPostosParaGrafico();
+      // Resetar contador de XMLs disponíveis
+      await resetarXmlsDisponiveis();
+    } else {
+      mostrarStatusMensagem("Erro na importação: " + (data.error || data.mensagem || "Erro desconhecido"), "error");
+    }
+    
+  } catch (error) {
+    console.error("Erro ao importar XMLs:", error);
+    mostrarStatusMensagem("Erro ao importar XMLs. Verifique o console.", "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Confirmar Importação";
+  }
+}
+
+// ===================== IMPORTAÇÃO INICIAL (DIA 0) =====================
+document.getElementById("btnImportacaoInicial").addEventListener("click", async () => {
+  const btn = document.getElementById("btnImportacaoInicial");
+  btn.disabled = true;
+  btn.textContent = "Carregando preview...";
+
+  try {
+    // Fazer preview primeiro
+    const previewResponse = await fetch("/api/modulo2/sefaz/preview-inicial");
+    if (!previewResponse.ok) {
+      throw new Error(`HTTP ${previewResponse.status}`);
+    }
+    const previewData = await previewResponse.json();
+    
+    if (previewData.status === "error") {
+      mostrarStatusMensagem(previewData.mensagem || "Erro ao fazer preview", "error");
+      return;
+    }
+    
+    // Mostrar modal de preview
+    mostrarModalPreviewInicial(previewData);
+    
+  } catch (error) {
+    console.error("Erro ao fazer preview da importação inicial:", error);
+    mostrarStatusMensagem("Erro ao carregar preview. Verifique o console.", "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Importação Inicial";
+  }
+});
+
+// Função para mostrar modal de preview da importação inicial
+function mostrarModalPreviewInicial(data) {
+  const modal = document.getElementById("modalPreview");
+  const content = document.getElementById("previewContent");
+  
+  const fornecedoresList = data.fornecedores && data.fornecedores.length > 0
+    ? data.fornecedores.map(f => `<li class="text-sm">${f.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`).join("")
+    : "<li class=\"text-sm text-slate-400\">Nenhum fornecedor encontrado</li>";
+  
+  content.innerHTML = `
+    <div class="space-y-3">
+      <div class="p-4 bg-purple-900/30 rounded-lg border border-purple-700/50">
+        <div class="text-sm font-medium mb-2 text-purple-200">⚠️ IMPORTAÇÃO INICIAL (Dia 0)</div>
+        <div class="text-xs text-purple-300 mb-3">
+          Esta operação irá importar TODOS os XMLs desde o início do ano até hoje.
+          Este processo pode demorar VÁRIAS HORAS dependendo do volume.
+        </div>
+      </div>
+      <div class="p-4 bg-slate-700/50 rounded-lg">
+        <div class="text-sm font-medium mb-2">Resumo da Importação</div>
+        <div class="space-y-1 text-sm">
+          <div><span class="text-slate-400">Quantidade de NFs:</span> <span class="font-semibold">${data.total_encontrado || 0}</span></div>
+          <div><span class="text-slate-400">Valor Total:</span> <span class="font-semibold">${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(data.valor_total || 0)}</span></div>
+          <div><span class="text-slate-400">Período:</span> <span class="font-semibold">${data.periodo?.descricao || "N/A"}</span></div>
+        </div>
+      </div>
+      <div class="p-4 bg-slate-700/50 rounded-lg">
+        <div class="text-sm font-medium mb-2">Fornecedores (${data.fornecedores?.length || 0})</div>
+        <ul class="list-disc list-inside space-y-1 max-h-32 overflow-y-auto">
+          ${fornecedoresList}
+        </ul>
+      </div>
+      <div class="text-xs text-slate-400 p-2 bg-blue-900/20 rounded border border-blue-700/30">
+        <strong>Nota:</strong> Esta importação usará apenas XMLs novos via NSU incremental. XMLs já importados serão ignorados automaticamente.
+      </div>
+    </div>
+  `;
+  
+  // Atualizar botão de confirmação
+  const btnConfirmar = document.getElementById("btnConfirmarImportacao");
+  if (btnConfirmar) {
+    btnConfirmar.setAttribute("data-tipo", "inicial");
+    btnConfirmar.textContent = "Confirmar Importação Inicial";
+    btnConfirmar.disabled = false;
+  }
+  
+  modal.classList.add("active");
+}
+
+// Função para confirmar importação inicial
+async function confirmarImportacaoInicial() {
+  const btn = document.getElementById("btnConfirmarImportacao");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Importando...';
+  
+  fecharModalPreview();
+  mostrarStatusMensagem("Importação iniciada. Aguarde...", "info");
+  
+  // Iniciar polling de progresso
+  const progressInterval = setInterval(async () => {
+    try {
+      const progResponse = await fetch("/api/modulo2/importacao/progresso");
+      const progData = await progResponse.json();
+      
+      if (progData.em_andamento && progData.total > 0) {
+        btn.innerHTML = `<span class="spinner"></span> Processando ${progData.processados}/${progData.total}...`;
+      }
+    } catch (e) {
+      console.error("Erro ao obter progresso:", e);
+    }
+  }, 2000); // Atualizar a cada 2 segundos
+
+  try {
+    const response = await fetch("/api/modulo2/sefaz/importacao-inicial", {
+      method: "POST"
+    });
+    const data = await response.json();
+    
+    clearInterval(progressInterval);
+    
+    if (data.success) {
+      // Obter estatísticas finais
+      const statsResponse = await fetch("/api/modulo2/estatisticas/resumo");
+      const stats = await statsResponse.json();
+      
+      // Mostrar popup de sucesso
+      mostrarPopupSucesso(stats);
+      
+      // Recarregar dados
+      await carregarPendencias();
+      await carregarPostosParaGrafico();
+      
+      // Verificar estado para ocultar botão
+      await verificarEstadoImportacao();
+    } else {
+      mostrarStatusMensagem("Erro: " + (data.error || data.mensagem || "Erro desconhecido"), "error");
+    }
+    
+  } catch (error) {
+    clearInterval(progressInterval);
+    console.error("Erro:", error);
+    mostrarStatusMensagem("Erro na importação", "error");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Confirmar Importação Inicial';
+  }
+}
+
+// ===================== POPUP DE SUCESSO E ESTADO =====================
+
+function mostrarPopupSucesso(stats) {
+  document.getElementById("statTotal").textContent = stats.total || 0;
+  document.getElementById("statIdentificadas").textContent = stats.identificadas || 0;
+  document.getElementById("statPendentes").textContent = stats.pendentes || 0;
+  document.getElementById("statPercentual").textContent = (stats.percentual_identificacao || 0) + "%";
+  
+  document.getElementById("successPopup").classList.add("show");
+  document.getElementById("modalPreview").classList.remove("active");
+}
+
+function fecharPopupSucesso() {
+  document.getElementById("successPopup").classList.remove("show");
+}
+
+async function verificarEstadoImportacao() {
+  try {
+    const response = await fetch("/api/modulo2/importacao/estado");
+    const data = await response.json();
+    
+    const btnImportacaoInicial = document.getElementById("btnImportacaoInicial");
+    if (data.mostrar_botao_inicial) {
+      btnImportacaoInicial.style.display = "inline-block";
+    } else {
+      btnImportacaoInicial.style.display = "none";
+    }
+  } catch (e) {
+    console.error("Erro ao verificar estado:", e);
+    // Em caso de erro, mostrar botão por padrão
+    document.getElementById("btnImportacaoInicial").style.display = "inline-block";
+  }
+}
+
+async function resetarXmlsDisponiveis() {
+  try {
+    await fetch("/api/modulo2/scheduler/reset-xmls");
+    // Atualizar status imediatamente
+    await verificarStatusScheduler();
+  } catch (e) {
+    console.error("Erro ao resetar XMLs disponíveis:", e);
+  }
+}
+
+// ===================== LOGS/DEBUG =====================
+document.getElementById("btnLogs").addEventListener("click", () => {
+  mostrarModalLogs();
+  carregarLogs();
+  carregarStatusScheduler();
+});
+
+function mostrarModalLogs() {
+  document.getElementById("modalLogs").classList.add("active");
+}
+
+function fecharModalLogs() {
+  document.getElementById("modalLogs").classList.remove("active");
+}
+
+async function carregarLogs() {
+  try {
+    const response = await fetch("/api/modulo2/importacoes/log?limit=20");
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const logs = await response.json();
+    
+    const logsList = document.getElementById("logsList");
+    if (!Array.isArray(logs) || logs.length === 0) {
+      logsList.innerHTML = '<div class="text-sm text-slate-400">Nenhum log encontrado</div>';
+      return;
+    }
+    
+    logsList.innerHTML = logs.map(log => {
+      const statusColor = log.status === "concluido" ? "text-emerald-400" : 
+                         log.status === "erro" ? "text-red-400" : "text-yellow-400";
+      const tipoLabel = log.tipo === "inicial" ? "Importação Inicial" :
+                       log.tipo === "diaria" ? "Importação Diária" : "Importação Manual";
+      const tempoFormatado = log.tempo_segundos ? `${Math.floor(log.tempo_segundos / 60)} min` : "—";
+      
+      return `
+        <div class="p-3 bg-slate-700/50 rounded-lg border border-slate-600">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-sm font-medium">${tipoLabel}</span>
+            <span class="text-xs ${statusColor}">${log.status || "—"}</span>
+          </div>
+          <div class="text-xs text-slate-400 space-y-1">
+            <div>Período: ${log.data_inicio || "—"} até ${log.data_fim || "—"}</div>
+            <div>XMLs: ${log.total_xmls || 0} processados | ${log.xmls_identificados || 0} identificados | ${log.xmls_pendentes || 0} pendentes</div>
+            <div>Tempo: ${tempoFormatado} | Iniciado: ${log.iniciado_em ? new Date(log.iniciado_em).toLocaleString('pt-BR') : "—"}</div>
+            ${log.mensagem ? `<div class="text-slate-300 mt-1">${log.mensagem}</div>` : ""}
+          </div>
+        </div>
+      `;
+    }).join("");
+    
+  } catch (error) {
+    console.error("Erro ao carregar logs:", error);
+    document.getElementById("logsList").innerHTML = '<div class="text-sm text-red-400">Erro ao carregar logs</div>';
+  }
+}
+
+async function carregarStatusScheduler() {
+  try {
+    const status = await verificarStatusScheduler();
+    const schedulerStatusContent = document.getElementById("schedulerStatusContent");
+    
+    if (!status) {
+      schedulerStatusContent.innerHTML = '<div class="text-xs text-red-400">Erro ao carregar status</div>';
+      return;
+    }
+    
+    const nextRun = status.next_run ? new Date(status.next_run).toLocaleString('pt-BR') : "Não agendado";
+    schedulerStatusContent.innerHTML = `
+      <div class="text-xs space-y-1">
+        <div><span class="text-slate-400">Status:</span> <span class="${status.running ? 'text-emerald-400' : 'text-red-400'}">${status.running ? 'Ativo' : 'Inativo'}</span></div>
+        <div><span class="text-slate-400">Próxima execução:</span> <span class="text-slate-200">${nextRun}</span></div>
+        <div><span class="text-slate-400">Jobs agendados:</span> <span class="text-slate-200">${status.jobs_count || 0}</span></div>
+      </div>
+    `;
+  } catch (error) {
+    console.error("Erro ao carregar status do scheduler:", error);
+  }
+}
+
+// ===================== CARREGAR PENDÊNCIAS =====================
+async function carregarPendencias(dataIni = null, dataFim = null) {
+  try {
+    // Construir URL com filtros de data
+    let url = "/api/modulo2/pendencias?limit=500";
+    if (dataIni) url += `&data_ini=${dataIni}`;
+    if (dataFim) url += `&data_fim=${dataFim}`;
+    
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const pendencias = await response.json();
+    
+    if (!Array.isArray(pendencias)) {
+      console.error("Resposta inválida de pendencias:", pendencias);
+      return;
+    }
+    
+    const tb = document.getElementById("tbPendencias");
+    tb.innerHTML = "";
+    
+    if (pendencias.length === 0) {
+      tb.innerHTML = `
+        <tr>
+          <td colspan="6" class="p-4 text-center text-slate-400">
+            Nenhuma pendência encontrada
+          </td>
+        </tr>
+      `;
+      return;
+    }
+    
+    pendencias.forEach((p, index) => {
+      const row = document.createElement("tr");
+      row.className = "border-b border-slate-700 hover:bg-slate-900/40";
+      
+      // Escapar HTML e criar dados seguros
+      const chave = (p.chave_nfe || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const fornecedor = (p.fornecedor || "—").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const cliente = (p.cliente || "—").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      
+      // Usar data attribute para passar dados de forma segura
+      row.setAttribute("data-pendencia", JSON.stringify(p));
+      
+      row.innerHTML = `
+        <td class="p-2 font-mono text-xs">${chave}</td>
+        <td class="p-2">${BRL.format(p.valor || 0)}</td>
+        <td class="p-2">${fornecedor}</td>
+        <td class="p-2">${cliente}</td>
+        <td class="p-2">${p.posto_trabalho ? p.posto_trabalho.replace(/</g, "&lt;").replace(/>/g, "&gt;") : "<span class='text-amber-400'>Não identificado</span>"}</td>
+        <td class="p-2 text-center">
+          <button data-pendencia-id="${p.id || index}" 
+                  class="btn-identificar px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs">
+            Identificar NFe
+          </button>
+        </td>
+      `;
+      tb.appendChild(row);
+    });
+    
+    // Adicionar event listeners aos botões após criar as linhas
+    document.querySelectorAll(".btn-identificar").forEach(btn => {
+      btn.addEventListener("click", function() {
+        const row = this.closest("tr");
+        const dataStr = row.getAttribute("data-pendencia");
+        if (dataStr) {
+          try {
+            const pendencia = JSON.parse(dataStr);
+            abrirModalIdentificar(pendencia);
+          } catch (e) {
+            console.error("Erro ao parsear dados da pendência:", e);
+          }
+        }
+      });
+    });
+    
+    document.getElementById("pendHint").textContent = `${pendencias.length} pendência(s) encontrada(s)`;
+    
+  } catch (error) {
+    console.error("Erro ao carregar pendências:", error);
+  }
+}
+
+// ===================== CARREGAR POSTOS PARA GRÁFICO =====================
+let clienteFiltrado = null; // Cliente selecionado no gráfico
+
+async function carregarPostosParaGrafico(dataIni = null, dataFim = null, cliente = null) {
+  try {
+    // Construir URL com filtros de data e cliente
+    let url = "/api/modulo2/gastos-por-posto";
+    const params = [];
+    if (dataIni) params.push(`data_ini=${dataIni}`);
+    if (dataFim) params.push(`data_fim=${dataFim}`);
+    if (cliente) params.push(`cliente=${encodeURIComponent(cliente)}`);
+    if (params.length > 0) {
+      url += "?" + params.join("&");
+    }
+    
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const dados = await response.json();
+    
+    if (!Array.isArray(dados)) {
+      console.error("Resposta inválida de gastos por cliente:", dados);
+      dadosPostos = [];
+    } else {
+      // Ordenar em ordem decrescente de realizado (já vem ordenado do backend, mas garantir)
+      dadosPostos = dados
+        .sort((a, b) => (b.realizado || 0) - (a.realizado || 0))
+        .slice(0, 30); // Mostrar até 30 clientes
+      
+      // Se houver apenas um cliente (filtrado), atualizar progresso
+      if (dadosPostos.length === 1 && cliente && dadosPostos[0]) {
+        atualizarProgressoPorPosto(dadosPostos[0]);
+        // Atualizar nome do cliente na seção de filtro
+        const clienteInfoEl = document.getElementById("clienteSelecionadoInfo");
+        const clienteNomeEl = document.getElementById("clienteSelecionadoNome");
+        if (clienteInfoEl && clienteNomeEl) {
+          clienteNomeEl.textContent = cliente;
+          clienteInfoEl.classList.remove("hidden");
+        }
+      } else if (!cliente) {
+        // Se não houver filtro, mostrar total geral (mesmo que array vazio)
+        atualizarProgressoGeral(dadosPostos || []);
+        // Ocultar nome do cliente na seção de filtro
+        const clienteInfoEl = document.getElementById("clienteSelecionadoInfo");
+        const clienteNomeEl = document.getElementById("clienteSelecionadoNome");
+        if (clienteInfoEl && clienteNomeEl) {
+          clienteInfoEl.classList.add("hidden");
+          clienteNomeEl.textContent = "—";
+        }
+      } else if (cliente && dadosPostos.length > 0) {
+        // Cliente filtrado mas pode ter múltiplos resultados
+        // Se houver dados, atualizar progresso geral com os dados filtrados
+        atualizarProgressoGeral(dadosPostos);
+        const clienteInfoEl = document.getElementById("clienteSelecionadoInfo");
+        const clienteNomeEl = document.getElementById("clienteSelecionadoNome");
+        if (clienteInfoEl && clienteNomeEl) {
+          clienteNomeEl.textContent = cliente;
+          clienteInfoEl.classList.remove("hidden");
+        }
+      } else if (cliente && dadosPostos.length === 0) {
+        // Cliente filtrado mas sem dados - mostrar zeros
+        atualizarProgressoGeral([]);
+        const clienteInfoEl = document.getElementById("clienteSelecionadoInfo");
+        const clienteNomeEl = document.getElementById("clienteSelecionadoNome");
+        if (clienteInfoEl && clienteNomeEl) {
+          clienteNomeEl.textContent = cliente;
+          clienteInfoEl.classList.remove("hidden");
+        }
+      }
+    }
+    
+    renderGraficoPostos(dadosPostos, cliente);
+    
+  } catch (error) {
+    console.error("Erro ao carregar gastos por cliente:", error);
+    dadosPostos = [];
+    renderGraficoPostos([], null);
+  }
+}
+
+// ===================== ATUALIZAR PROGRESSO GERAL =====================
+function atualizarProgressoGeral(dados) {
+  const totalOrcado = dados.reduce((sum, d) => sum + (d.orcado || 0), 0);
+  const totalRealizado = dados.reduce((sum, d) => sum + (d.realizado || 0), 0);
+  const totalStatus = totalOrcado - totalRealizado;
+  
+  document.getElementById("progressTitulo").textContent = "Orçado vs Realizado - Geral";
+  document.getElementById("valorOrcado").textContent = BRL.format(totalOrcado);
+  document.getElementById("valorRealizado").textContent = BRL.format(totalRealizado);
+  document.getElementById("valorStatus").textContent = BRL.format(totalStatus);
+  
+  const percentual = totalOrcado > 0 ? (totalRealizado / totalOrcado) * 100 : 0;
+  const progressBar = document.getElementById("progressBar");
+  progressBar.style.width = `${Math.min(percentual, 100)}%`;
+  progressBar.textContent = `${percentual.toFixed(1)}%`;
+}
+
+// ===================== RENDERIZAR GRÁFICO =====================
+function renderGraficoPostos(dados, clienteSelecionado = null) {
+  const ctx = document.getElementById("graficoPostos");
+  
+  if (chartPostos) {
+    chartPostos.destroy();
+  }
+  
+  // Ordenar em ordem decrescente de realizado
+  const dadosOrdenados = [...dados].sort((a, b) => (b.realizado || 0) - (a.realizado || 0));
+  
+  // Se não houver dados, mostrar mensagem
+  if (dadosOrdenados.length === 0) {
+    document.getElementById("graficoPostos").getContext('2d').clearRect(0, 0, ctx.width, ctx.height);
+    return;
+  }
+  
+  // Mostrar/ocultar botão de voltar
+  const btnVoltar = document.getElementById("btnVoltarGeral");
+  const graficoTitulo = document.getElementById("graficoTitulo");
+  
+  if (clienteSelecionado) {
+    btnVoltar.classList.remove("hidden");
+    graficoTitulo.textContent = `Gastos do Cliente: ${clienteSelecionado}`;
+  } else {
+    btnVoltar.classList.add("hidden");
+    graficoTitulo.textContent = "Gastos por Cliente";
+  }
+  
+  chartPostos = new Chart(ctx, {
     type: "bar",
     data: {
-      labels,
-      datasets: [{ label, data: values }]
+      labels: dadosOrdenados.map(d => d.nomecli || d.nome || "Cliente"),
+      datasets: [
+        {
+          label: "Orçado (R$)",
+          data: dadosOrdenados.map(d => d.orcado || 0),
+          backgroundColor: "rgba(59, 130, 246, 0.6)", // Azul
+          borderColor: "rgba(59, 130, 246, 1)",
+          borderWidth: 1
+        },
+        {
+          label: "Realizado (R$)",
+          data: dadosOrdenados.map(d => d.realizado || 0),
+          backgroundColor: "rgba(16, 185, 129, 0.6)", // Verde
+          borderColor: "rgba(16, 185, 129, 1)",
+          borderWidth: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: 'x',
+      plugins: {
+        legend: { 
+          display: true,
+          position: 'top',
+          labels: {
+            color: '#cbd5e1',
+            font: { size: 12 }
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => {
+              const label = context.dataset.label || '';
+              const value = context.parsed.y;
+              const cliente = dadosOrdenados[context.dataIndex];
+              
+              if (label.includes("Orçado")) {
+                return `${label}: ${BRL.format(value)}`;
+              } else if (label.includes("Realizado")) {
+                const status = (cliente.orcado || 0) - (cliente.realizado || 0);
+                return [
+                  `${label}: ${BRL.format(value)}`,
+                  `Status (Orçado - Realizado): ${BRL.format(status)}`
+                ];
+              }
+              return `${label}: ${BRL.format(value)}`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: (value) => BRL.format(value),
+            color: '#cbd5e1'
+          },
+          grid: {
+            color: 'rgba(148, 163, 184, 0.1)'
+          }
+        },
+        x: {
+          ticks: {
+            maxRotation: 90,
+            minRotation: 90,
+            font: {
+              size: 10
+            },
+            color: '#cbd5e1'
+          },
+          grid: {
+            display: false
+          }
+        }
+      },
+      onClick: (event, elements) => {
+        if (elements && elements.length > 0) {
+          const idx = elements[0].index;
+          const cliente = dadosOrdenados[idx];
+          // Filtrar por cliente ao clicar
+          clienteFiltrado = cliente.nomecli || cliente.nome;
+          
+          // Atualizar nome do cliente na seção de filtro
+          const clienteInfoEl = document.getElementById("clienteSelecionadoInfo");
+          const clienteNomeEl = document.getElementById("clienteSelecionadoNome");
+          if (clienteInfoEl && clienteNomeEl) {
+            clienteNomeEl.textContent = clienteFiltrado;
+            clienteInfoEl.classList.remove("hidden");
+          }
+          
+          // Mostrar botão "Ver Todos" na seção de filtro
+          document.getElementById("btnVoltarGeralFiltro").classList.remove("hidden");
+          
+          carregarPostosParaGrafico(
+            document.getElementById("filtroDataIni").value || null,
+            document.getElementById("filtroDataFim").value || null,
+            clienteFiltrado
+          );
+        }
+      }
     }
   });
+}
 
-  if (canvasId === "chartGastosDia") chartGastos = c;
-  if (canvasId === "chartComprasDia") chartCompras = c;
+// ===================== ATUALIZAR PROGRESSO POR POSTO =====================
+function atualizarProgressoPorPosto(cliente) {
+  // Verificação de segurança: se não houver cliente, não fazer nada
+  if (!cliente || typeof cliente !== 'object') {
+    console.warn("atualizarProgressoPorPosto: cliente não fornecido ou inválido");
+    return;
+  }
+  
+  // Usar valores reais do cliente (orçado, realizado, status)
+  const orcado = cliente.orcado || 0;
+  const realizado = cliente.realizado || 0;
+  const status = cliente.status !== undefined ? cliente.status : (orcado - realizado);
+  
+  const percentual = orcado > 0 ? (realizado / orcado) * 100 : 0;
+  
+  // Atualizar título e valores
+  const nomeCliente = cliente.nomecli || cliente.nome || "Cliente";
+  document.getElementById("progressTitulo").textContent = `Orçado vs Realizado - ${nomeCliente}`;
+  document.getElementById("valorOrcado").textContent = BRL.format(orcado);
+  document.getElementById("valorRealizado").textContent = BRL.format(realizado);
+  document.getElementById("valorStatus").textContent = BRL.format(status);
+  
+  // Atualizar cor do status (verde se positivo, vermelho se negativo)
+  const statusEl = document.getElementById("valorStatus");
+  if (status >= 0) {
+    statusEl.className = "font-bold text-emerald-400";
+  } else {
+    statusEl.className = "font-bold text-red-400";
+  }
+  
+  // Atualizar barra de progresso
+  const progressBar = document.getElementById("progressBar");
+  progressBar.style.width = `${Math.min(percentual, 100)}%`;
+  progressBar.textContent = `${percentual.toFixed(1)}%`;
+  
+  // Ajustar cor da barra baseado no percentual
+  if (percentual <= 50) {
+    progressBar.className = "h-full bg-gradient-to-r from-emerald-500 to-emerald-600 flex items-center justify-center text-xs font-medium text-white transition-all duration-500";
+  } else if (percentual <= 80) {
+    progressBar.className = "h-full bg-gradient-to-r from-yellow-500 to-yellow-600 flex items-center justify-center text-xs font-medium text-white transition-all duration-500";
+  } else {
+    progressBar.className = "h-full bg-gradient-to-r from-red-500 to-red-600 flex items-center justify-center text-xs font-medium text-white transition-all duration-500";
+  }
+  
+  // Scroll suave para a barra de progresso
+  document.querySelector('section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ===================== MODAL IDENTIFICAR =====================
+async function abrirModalIdentificar(nfe) {
+  if (!nfe || !nfe.id) {
+    console.error("NFe inválida para identificar:", nfe);
+    alert("Erro: Dados da NFe inválidos");
+    return;
+  }
+  
+  nfeSelecionada = nfe;
+  
+  try {
+    document.getElementById("modalChave").textContent = nfe.chave_nfe || "";
+    document.getElementById("modalValor").textContent = BRL.format(nfe.valor || 0);
+    document.getElementById("modalFornecedor").textContent = nfe.fornecedor || "—";
+    document.getElementById("modalCliente").textContent = nfe.cliente || "—";
+    document.getElementById("modalPostoAtual").textContent = nfe.posto_trabalho || "Não identificado";
+    
+    // Carregar clientes e postos nos selects (forçar recarregamento)
+    clientesCarregados = false;
+    postosCarregados = false;
+    await carregarClientesEPostos();
+    
+    document.getElementById("modalIdentificar").classList.add("active");
+  } catch (error) {
+    console.error("Erro ao abrir modal:", error);
+    alert("Erro ao abrir modal de identificação");
+  }
+}
+
+function fecharModal() {
+  document.getElementById("modalIdentificar").classList.remove("active");
+  nfeSelecionada = null;
+}
+
+let clientesCarregados = false;
+let postosCarregados = false;
+
+async function carregarClientesEPostos() {
+  // Evitar carregamento duplicado
+  if (clientesCarregados && postosCarregados) {
+    return;
+  }
+  
+  try {
+    // Carregar clientes apenas se necessário
+    const selectCliente = document.getElementById("selectCliente");
+    if (selectCliente && !clientesCarregados) {
+      selectCliente.innerHTML = '<option value="">Carregando...</option>';
+      
+      try {
+        const clientesResponse = await fetch("/api/modulo2/clientes");
+        if (!clientesResponse.ok) {
+          throw new Error(`HTTP ${clientesResponse.status}`);
+        }
+        const clientes = await clientesResponse.json();
+        
+        selectCliente.innerHTML = '<option value="">Selecione...</option>';
+        if (Array.isArray(clientes)) {
+          clientes.forEach(c => {
+            const option = document.createElement("option");
+            option.value = c.id || c.nome || "";
+            option.textContent = c.nome || c.id || "";
+            selectCliente.appendChild(option);
+          });
+        }
+        clientesCarregados = true;
+      } catch (err) {
+        console.error("Erro ao carregar clientes:", err);
+        selectCliente.innerHTML = '<option value="">Erro ao carregar clientes</option>';
+      }
+    }
+    
+    // Carregar postos apenas se necessário
+    const selectPosto = document.getElementById("selectPosto");
+    if (selectPosto && !postosCarregados) {
+      selectPosto.innerHTML = '<option value="">Carregando...</option>';
+      
+      try {
+        const response = await fetch("/api/modulo2/postos");
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const postos = await response.json();
+        
+        selectPosto.innerHTML = '<option value="">Selecione...</option>';
+        if (Array.isArray(postos)) {
+          postos.forEach(p => {
+            const option = document.createElement("option");
+            option.value = p.id || p.codigo || "";
+            const nomePosto = p.nomepos || p.nome || `Posto ${p.id}`;
+            const nomeCli = p.nomecli ? ` (${p.nomecli})` : "";
+            option.textContent = nomePosto + nomeCli;
+            selectPosto.appendChild(option);
+          });
+        }
+        postosCarregados = true;
+      } catch (err) {
+        console.error("Erro ao carregar postos:", err);
+        selectPosto.innerHTML = '<option value="">Erro ao carregar postos</option>';
+      }
+    }
+    
+  } catch (error) {
+    console.error("Erro ao carregar clientes/postos:", error);
+  }
+}
+
+async function salvarIdentificacao() {
+  if (!nfeSelecionada || !nfeSelecionada.id) {
+    alert("Erro: NFe não selecionada corretamente");
+    return;
+  }
+  
+  const clienteId = document.getElementById("selectCliente").value;
+  const postoId = document.getElementById("selectPosto").value;
+  
+  if (!clienteId || !postoId) {
+    alert("Por favor, selecione cliente e posto de trabalho");
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/modulo2/pendencias/${nfeSelecionada.id}/identificar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        cliente_id: clienteId,
+        posto_id: parseInt(postoId)
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      alert("NFe identificada com sucesso!");
+      fecharModal();
+      carregarPendencias();
+      carregarPostosParaGrafico();
+    } else {
+      alert("Erro ao salvar: " + (data.error || "Erro desconhecido"));
+    }
+    
+  } catch (error) {
+    console.error("Erro ao salvar identificação:", error);
+    alert("Erro ao salvar identificação. Verifique o console.");
+  }
+}
+
+// Fechar modal ao clicar no backdrop
+document.getElementById("modalIdentificar").addEventListener("click", (e) => {
+  if (e.target.id === "modalIdentificar") {
+    fecharModal();
+  }
+});
+
+// ===================== MENSAGEM DE STATUS =====================
+function mostrarStatusMensagem(texto, tipo = "info") {
+  const statusMensagem = document.getElementById("statusMensagem");
+  const statusTexto = document.getElementById("statusTexto");
+  
+  if (!statusMensagem || !statusTexto) return;
+  
+  statusTexto.textContent = texto;
+  statusMensagem.classList.remove("hidden");
+  
+  // Aplicar cores baseadas no tipo
+  statusMensagem.className = "text-xs px-3 py-1 rounded-full border";
+  if (tipo === "success") {
+    statusMensagem.classList.add("text-emerald-300", "bg-emerald-900/30", "border-emerald-600/50");
+  } else if (tipo === "error") {
+    statusMensagem.classList.add("text-red-300", "bg-red-900/30", "border-red-600/50");
+  } else {
+    statusMensagem.classList.add("text-slate-300", "bg-slate-700/50", "border-slate-600/50");
+  }
+  
+  // Auto-ocultar após 5 segundos (exceto erros)
+  if (tipo !== "error") {
+    setTimeout(() => {
+      statusMensagem.classList.add("hidden");
+    }, 5000);
+  }
+}
+
+// ===================== FILTRO DE DATA =====================
+async function aplicarFiltroData() {
+  const dataIni = document.getElementById("filtroDataIni").value;
+  const dataFim = document.getElementById("filtroDataFim").value;
+  
+  if (!dataIni || !dataFim) {
+    alert("Por favor, preencha ambas as datas (De e Até)");
+    return;
+  }
+  
+  // Aplicar filtro em pendências e gráfico (manter cliente filtrado se existir)
+  await Promise.all([
+    carregarPendencias(dataIni, dataFim),
+    carregarPostosParaGrafico(dataIni, dataFim, clienteFiltrado)
+  ]);
+  
+  // Mostrar botão "Ver Todos" e nome do cliente se houver cliente filtrado
+  if (clienteFiltrado) {
+    document.getElementById("btnVoltarGeralFiltro").classList.remove("hidden");
+    const clienteInfoEl = document.getElementById("clienteSelecionadoInfo");
+    const clienteNomeEl = document.getElementById("clienteSelecionadoNome");
+    if (clienteInfoEl && clienteNomeEl) {
+      clienteNomeEl.textContent = clienteFiltrado;
+      clienteInfoEl.classList.remove("hidden");
+    }
+  } else {
+    document.getElementById("btnVoltarGeralFiltro").classList.add("hidden");
+    const clienteInfoEl = document.getElementById("clienteSelecionadoInfo");
+    if (clienteInfoEl) {
+      clienteInfoEl.classList.add("hidden");
+    }
+  }
+}
+
+function limparFiltroData() {
+  document.getElementById("filtroDataIni").value = "";
+  document.getElementById("filtroDataFim").value = "";
+  clienteFiltrado = null; // Resetar filtro de cliente
+  
+  // Ocultar nome do cliente na seção de filtro
+  const clienteInfoEl = document.getElementById("clienteSelecionadoInfo");
+  const clienteNomeEl = document.getElementById("clienteSelecionadoNome");
+  if (clienteInfoEl && clienteNomeEl) {
+    clienteInfoEl.classList.add("hidden");
+    clienteNomeEl.textContent = "—";
+  }
+  
+  // Mostrar/ocultar botões
+  document.getElementById("btnVoltarGeral").classList.add("hidden");
+  document.getElementById("btnVoltarGeralFiltro").classList.add("hidden");
+  
+  // Recarregar dados sem filtro
+  carregarPendencias().catch(err => console.error("Erro ao carregar pendências:", err));
+  carregarPostosParaGrafico().catch(err => console.error("Erro ao carregar postos:", err));
+  
+  // Verificar estado da importação para ocultar botão se necessário
+  verificarEstadoImportacao().catch(err => console.error("Erro ao verificar estado:", err));
 }
 </script>
+
+  <!-- POPUP DE SUCESSO DA IMPORTAÇÃO -->
+  <div id="successPopup" class="success-popup">
+    <div class="text-center">
+      <div class="text-6xl mb-4">✅</div>
+      <h3 class="text-2xl font-bold mb-4 text-green-400">Importação Concluída!</h3>
+      <div class="space-y-3 text-left bg-slate-900/50 rounded-lg p-4 mb-6">
+        <div class="flex justify-between">
+          <span class="text-slate-400">Total de XMLs:</span>
+          <span id="statTotal" class="font-bold text-white">0</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-400">Identificadas automaticamente:</span>
+          <span id="statIdentificadas" class="font-bold text-green-400">0</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-400">Pendentes de validação:</span>
+          <span id="statPendentes" class="font-bold text-yellow-400">0</span>
+        </div>
+        <div class="flex justify-between pt-3 border-t border-slate-700">
+          <span class="text-slate-400">Taxa de identificação:</span>
+          <span id="statPercentual" class="font-bold text-blue-400">0%</span>
+        </div>
+      </div>
+      <button onclick="fecharPopupSucesso()" 
+              class="w-full px-6 py-3 bg-green-600 hover:bg-green-500 rounded-lg font-medium text-white">
+        Entendi
+      </button>
+    </div>
+  </div>
 
 </body>
 </html>

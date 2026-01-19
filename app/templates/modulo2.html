@@ -1,173 +1,1181 @@
-<!-- app/templates/index.html -->
 <!DOCTYPE html>
 <html lang="pt-BR" class="dark">
 <head>
   <meta charset="UTF-8" />
-  <title>Sistema de Análises v1.3</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Rentus Análises — Módulo 2 (SEFAZ + Suprimentos)</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    #sideMenu {
+      position: fixed; left: 0; top: 0;
+      height: 100vh; width: 0;
+      background: #1e293b; overflow-x: hidden;
+      transition: width 0.25s ease-in-out;
+      z-index: 9999; padding: 0;
+    }
+    #sideMenu.open { width: 360px; padding: 24px; }
+    #menuBackdrop {
+      display: none; position: fixed; left: 0; top: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.45); z-index: 9990;
+    }
+    .soft-scroll::-webkit-scrollbar { height: 10px; width: 10px; }
+    .soft-scroll::-webkit-scrollbar-thumb { background: rgba(148,163,184,25); border-radius: 999px; }
+    .soft-scroll::-webkit-scrollbar-track { background: rgba(15,23,42,35); }
+    .chart-wrap { height: 320px; }
+    
+    /* Tooltip de informação */
+    .info-tooltip {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .info-tooltip .tooltip-content {
+      visibility: hidden;
+      opacity: 0;
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e293b;
+      border: 1px solid #475569;
+      border-radius: 12px;
+      padding: 12px 16px;
+      min-width: 220px;
+      z-index: 1000;
+      transition: opacity 0.2s, visibility 0.2s;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .info-tooltip:hover .tooltip-content {
+      visibility: visible;
+      opacity: 1;
+    }
+    .info-tooltip .tooltip-content::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: #475569;
+    }
+    
+    /* Modal de exportação */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: #1e293b;
+      border: 1px solid #475569;
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 500px;
+      width: 90%;
+    }
+  </style>
 </head>
 
 <body class="bg-slate-900 text-slate-200 min-h-screen flex flex-col">
+  <!-- BANNER MODO DEV (oculto por padrão, exibido via JS se DEV_MODE) -->
+  <div id="devModeBanner" class="hidden bg-amber-600 text-amber-950 text-center py-2 px-4 font-semibold text-sm">
+    ⚠️ MODO DESENVOLVIMENTO — Dados mockados (sem conexão real com SEFAZ)
+  </div>
+
+  <div id="menuBackdrop" onclick="toggleMenu()"></div>
+
+  <!-- SIDE MENU -->
+  <aside id="sideMenu" class="text-slate-200">
+    <div class="flex items-center justify-between mb-4">
+      <div class="font-bold">Navegação</div>
+      <button onclick="toggleMenu()" class="text-xl">✕</button>
+    </div>
+    <nav class="space-y-2 text-sm">
+      <button class="w-full text-left px-3 py-2 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700" onclick="scrollToSection('secConsulta')">Consulta SEFAZ</button>
+      <button class="w-full text-left px-3 py-2 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700" onclick="scrollToSection('secProgresso')">Orçado vs Realizado</button>
+      <button class="w-full text-left px-3 py-2 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700" onclick="scrollToSection('secGastosPosto')">Gastos por Posto</button>
+      <button class="w-full text-left px-3 py-2 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700" onclick="scrollToSection('secPendencias')">Pendências</button>
+    </nav>
+  </aside>
 
   <!-- HEADER -->
- <header class="w-full flex items-center justify-center py-6 bg-slate-800 border-b border-slate-700 shadow-sm">
-  <div class="flex items-center gap-3">
-    <img src="/static/images/logo.png" alt="Rentus" class="h-10">
-    <span class="text-2xl font-bold text-slate-200 tracking-tight">
-      Módulo 2 - Suprimentos
-    </span>
-  </div>
-  <button
-      onclick="window.location.href='/index'"
-      class="px-4 py-2 rounded-full text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 shadow"
-    >
-      Voltar
-    </button>
-</header>
+  <header class="w-full flex items-center gap-4 py-4 px-6 bg-slate-800 border-b border-slate-700 shadow-sm">
+    <button onclick="toggleMenu()" class="text-2xl select-none leading-none" aria-label="Abrir menu">☰</button>
 
-<!-- CONTEÚDO -->
-<main class="flex-1 flex items-center justify-center p-6">
-
-  <div class="w-full max-w-4xl bg-slate-800 border border-slate-700 rounded-2xl shadow-xl p-8 space-y-6">
-
-    <!-- TÍTULO -->
-    <div>
-      <h1 class="text-2xl font-bold text-emerald-400">
-        Módulo 2 – Suprimentos
-      </h1>
-      <p class="text-slate-400 text-sm">
-        Importação de XML e geração de planilha consolidada (XLSX)
-      </p>
-      <p class="text-slate-400 text-sm">
-        1 - selecione até 10 arquivos XML;<br>
-        2 - clique em "Processar";<br>
-        3 - baixe a planilha gerada ou abra o dashboard.
-      </p>
-    </div>
-
-    <!-- INPUT XML -->
-    <div class="space-y-2">
-      <label class="text-sm font-medium text-slate-300">
-        Arquivos XML (até 10)
-      </label>
-
-      <div class="flex items-center gap-4">
-        <!-- input real -->
-        <input
-          type="file"
-          id="xmls"
-          multiple
-          accept=".xml"
-          class="hidden"
-        >
-
-        <!-- botão verde -->
-        <button
-          type="button"
-          onclick="document.getElementById('xmls').click()"
-          class="bg-emerald-600 hover:bg-emerald-500 text-white
-                 px-6 py-2 rounded-lg font-medium shadow transition"
-        >
-          Selecionar XMLs
-        </button>
-
-        <span id="fileInfo" class="text-sm text-slate-400 italic">
-          Nenhum arquivo selecionado
-        </span>
+    <div class="flex items-center gap-3">
+      <div class="leading-tight">
+        <div class="flex items-center gap-3">
+          <img src="/static/images/logo.png" alt="Rentus" class="h-10">
+          <span class="text-2xl font-bold text-slate-200 tracking-tight">
+            Módulo de suprimentos v1.0
+          </span>
+        </div>
       </div>
     </div>
 
-    <!-- AÇÕES -->
-    <div class="flex items-center gap-4">
-      <button
-        onclick="processar()"
-        class="bg-sky-600 hover:bg-sky-500 text-white
-               px-6 py-2 rounded-lg font-medium shadow transition"
-      >
-        Processar
+    <div class="ml-auto flex flex-wrap items-center justify-end gap-3">
+      <!-- Botão de Informação com Tooltip -->
+      <div class="info-tooltip">
+        <button class="w-8 h-8 rounded-full bg-slate-700 hover:bg-slate-600 border border-slate-600 flex items-center justify-center text-sm font-bold">
+          ℹ
+        </button>
+        <div class="tooltip-content text-xs">
+          <div class="text-slate-400 mb-2">Última atualização:</div>
+          <div class="font-semibold text-emerald-400" id="infoUltimaData">Carregando...</div>
+          <div class="text-slate-300" id="infoUltimaXmls">XMLs importados: --</div>
+          
+          <div class="border-t border-slate-600 my-3"></div>
+          
+          <div class="text-slate-400 mb-1">Próxima importação:</div>
+          <div class="font-semibold text-sky-400" id="infoProxima">--/--/---- - 00:01</div>
+          
+          <div class="border-t border-slate-600 my-3"></div>
+          
+          <div class="flex justify-between text-slate-300">
+            <span>Total no banco:</span>
+            <span class="font-semibold" id="infoTotal">--</span>
+          </div>
+          <div class="flex justify-between text-slate-300">
+            <span>Identificadas:</span>
+            <span class="font-semibold text-emerald-400" id="infoIdentificadas">--</span>
+          </div>
+          <div class="flex justify-between text-slate-300">
+            <span>Pendentes:</span>
+            <span class="font-semibold text-amber-400" id="infoPendentes">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botão Exportar Excel -->
+      <button id="btnExportarExcel" onclick="abrirModalExportacao()" 
+              class="px-3 py-1.5 rounded-lg text-xs bg-emerald-800/60 hover:bg-emerald-700 border border-emerald-600 flex items-center gap-2">
+        <span>📊</span>
+        <span>Exportar Excel</span>
       </button>
 
-      <a
-        id="download"
-        class="hidden bg-emerald-700 hover:bg-emerald-600 text-white
-               px-6 py-2 rounded-lg font-medium shadow transition"
-      >
-        Baixar XLSX
-      </a>
-
-      <button
-        onclick="window.location.href='/modulo2/dashboard'"
-        class="bg-slate-700 hover:bg-slate-600 text-white
-               px-6 py-2 rounded-lg font-medium shadow transition"
-      >
-        Abrir Dashboard
-      </button>
+      <span id="statusPill" class="text-xs px-3 py-1 rounded-full bg-slate-700 border border-slate-600 text-slate-200">
+        Pronto para consultar a SEFAZ
+      </span>
     </div>
+  </header>
 
-    <!-- LOG -->
-    <div>
-      <h2 class="text-sm font-semibold text-slate-300 mb-2">
-        Log de processamento
-      </h2>
-      <pre
-        id="log"
-        class="bg-slate-900 border border-slate-700 rounded-lg p-4
-               text-xs text-slate-300 max-h-64 overflow-y-auto"
-      >Aguardando processamento...</pre>
+  <main class="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+
+    <!-- IMPORTAÇÃO INICIAL (só aparece se banco vazio) -->
+    <section id="secImportacaoInicial" class="hidden bg-amber-900/20 border border-amber-700 rounded-2xl shadow p-5">
+      <div class="flex flex-col lg:flex-row lg:items-center gap-4 justify-between">
+        <div>
+          <div class="text-sm text-amber-400 font-semibold">⚠️ Importação Inicial Necessária</div>
+          <div class="text-lg font-semibold mt-1">Primeira importação de XMLs desde 01/01/2026</div>
+          <div class="text-xs text-slate-400 mt-2 space-y-1">
+            <div>🤖 <b>Processo totalmente automático</b> - pode demorar várias horas</div>
+            <div>⏳ Se houver bloqueio do SEFAZ, aguarda 1h10min e continua automaticamente</div>
+            <div>💾 XMLs são salvos progressivamente - nenhum dado é perdido</div>
+          </div>
+        </div>
+
+        <button id="btnImportacaoInicial" onclick="executarImportacaoInicial()" 
+                class="px-5 py-3 rounded-xl text-sm bg-amber-700 hover:bg-amber-600 border border-amber-500 font-semibold whitespace-nowrap">
+          🚀 Iniciar Importação Automática
+        </button>
+      </div>
+      <div id="msgImportacaoInicial" class="mt-3 hidden text-sm px-4 py-3 rounded-xl border"></div>
+    </section>
+
+    <!-- CONSULTA SEFAZ -->
+    <section id="secConsulta" class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5">
+      <div class="flex flex-col lg:flex-row lg:items-end gap-3 justify-between">
+        <div>
+          <div class="text-sm text-slate-400">Consulta</div>
+          <div class="text-lg font-semibold">Distribuição DF-e (por intervalo de datas)</div>
+          <div class="text-xs text-slate-400 mt-1">
+            Busca XMLs novos disponíveis na SEFAZ.
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-2 items-start sm:items-end">
+          <div class="flex flex-col">
+            <label class="text-xs text-slate-400 mb-1">Data inicial</label>
+            <input id="dtIni" type="date" value="2026-01-01" class="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm" />
+          </div>
+          <div class="flex flex-col">
+            <label class="text-xs text-slate-400 mb-1">Data final</label>
+            <input id="dtFim" type="date" class="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm" />
+          </div>
+
+          <button id="btnConsultarSefaz" class="px-4 py-2 rounded-xl text-sm bg-sky-700 hover:bg-sky-600 border border-sky-500">
+            Consultar SEFAZ
+          </button>
+
+          <button id="btnImportar" class="hidden px-4 py-2 rounded-xl text-sm bg-emerald-700 hover:bg-emerald-600 border border-emerald-500">
+            Importar XML's para o sistema
+          </button>
+        </div>
+      </div>
+
+      <div id="msgConsulta" class="mt-3 hidden text-sm px-4 py-3 rounded-xl border"></div>
+    </section>
+
+    <!-- ORÇADO x REALIZADO -->
+    <section id="secProgresso" class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5">
+      <div class="flex items-end justify-between gap-3 flex-wrap">
+        <div>
+          <div class="text-sm text-slate-400">Visão geral</div>
+          <div class="text-lg font-semibold">Orçado vs Realizado</div>
+          <div id="progressScope" class="text-xs text-slate-400 mt-1">Escopo: Geral (todas as NFs)</div>
+        </div>
+        <div class="text-right">
+          <div class="text-xs text-slate-400">Orçado</div>
+          <div id="vOrcado" class="text-xl font-bold"></div>
+        </div>
+        <div class="text-right">
+          <div class="text-xs text-slate-400">Realizado</div>
+          <div id="vRealizado" class="text-xl font-bold"></div>
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <div class="w-full h-4 bg-slate-900 border border-slate-700 rounded-full overflow-hidden">
+          <div id="barRealizado" class="h-full bg-emerald-600" style="width: 0%"></div>
+        </div>
+        <div id="pctLabel" class="text-xs text-slate-400 mt-2"></div>
+      </div>
+    </section>
+
+    <!-- GASTOS POR POSTO -->
+    <section id="secGastosPosto" class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <div class="text-sm text-slate-400">Consolidação</div>
+          <div class="text-lg font-semibold">Gastos por cliente</div>
+          <div class="text-xs text-slate-400 mt-1">Clique em uma coluna para ver o progresso específico do posto.</div>
+        </div>
+        <div class="text-right text-xs text-slate-500">
+          <div class="font-medium">Período fixo:</div>
+          <div id="graficoPeriodo">01/01/2026 - <span id="graficoDataFim">--/--/----</span></div>
+        </div>
+      </div>
+      <div class="mt-4 chart-wrap">
+        <canvas id="chartGastos"></canvas>
+      </div>
+    </section>
+
+    <!-- PENDÊNCIAS -->
+    <section id="secPendencias" class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5">
+      <div class="mb-3">
+        <div class="text-sm text-slate-400">Tratamento</div>
+        <div class="text-lg font-semibold">NF-es que precisam de identificação manual</div>
+        <div class="text-xs text-slate-400 mt-1" id="pendenciasSubtitle">Carregando...</div>
+      </div>
+
+      <div class="max-h-[360px] overflow-auto soft-scroll">
+        <table class="w-full text-sm">
+          <thead class="text-slate-300">
+            <tr class="border-b border-slate-700">
+              <th class="text-left p-2">Chave NF-e</th>
+              <th class="text-right p-2">Valor</th>
+              <th class="text-left p-2">Fornecedor</th>
+              <th class="text-left p-2">Cliente</th>
+              <th class="text-left p-2">Posto</th>
+              <th class="text-left p-2">Ação</th>
+            </tr>
+          </thead>
+          <tbody id="tbPendencias"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="text-xs text-slate-500 px-2 pb-8">
+      Rentus — Módulo 2 (SEFAZ + Suprimentos)
+    </footer>
+  </main>
+
+  <!-- MODAL IDENTIFICAÇÃO -->
+  <div id="modalBackdrop" class="hidden fixed inset-0 bg-black/50 z-[10000]"></div>
+  <div id="modalIdentify" class="hidden fixed inset-0 z-[10010] flex items-center justify-center p-4">
+    <div class="w-full max-w-2xl rounded-2xl bg-slate-900 border border-slate-700 shadow-xl">
+      <div class="flex items-center justify-between p-4 border-b border-slate-700">
+        <div class="font-semibold">Identificar NF-e</div>
+        <button class="text-xl" onclick="closeIdentifyModal()">✕</button>
+      </div>
+
+      <div class="p-4 space-y-3 text-sm">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <div class="text-xs text-slate-400">Chave</div>
+            <div id="mChave" class="font-mono text-xs break-all"></div>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400">Valor</div>
+            <div id="mValor" class="font-semibold"></div>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400">Fornecedor</div>
+            <div id="mFornecedor"></div>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400">Cliente (detectado)</div>
+            <div id="mCliente"></div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+          <div>
+            <label class="text-xs text-slate-400 mb-1 block">Selecionar cliente</label>
+            <select id="selCliente" class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700">
+              <option value="">Selecione…</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 mb-1 block">Selecionar posto</label>
+            <select id="selPosto" class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700">
+              <option value="">Selecione…</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 border-t border-slate-700 flex items-center justify-end gap-2">
+        <button class="px-4 py-2 rounded-xl text-sm bg-slate-800 hover:bg-slate-700 border border-slate-700" onclick="closeIdentifyModal()">Cancelar</button>
+        <button class="px-4 py-2 rounded-xl text-sm bg-emerald-700 hover:bg-emerald-600 border border-emerald-500" onclick="saveIdentify()">Salvar identificação</button>
+      </div>
     </div>
-
   </div>
-</main>
 
-<script>
-const input = document.getElementById("xmls");
-const fileInfo = document.getElementById("fileInfo");
+  <!-- MODAL EXPORTAÇÃO EXCEL -->
+  <div id="modalExportacao" class="hidden modal-overlay">
+    <div class="modal-content">
+      <div class="flex items-center justify-between mb-4">
+        <div class="font-semibold text-lg">📊 Exportar para Excel</div>
+        <button class="text-xl text-slate-400 hover:text-white" onclick="fecharModalExportacao()">✕</button>
+      </div>
 
-input.addEventListener("change", () => {
-  const count = input.files.length;
-  if (count === 0) {
-    fileInfo.textContent = "Nenhum arquivo selecionado";
-  } else {
-    fileInfo.textContent = `${count} arquivo(s) selecionado(s)`;
-  }
-});
+      <div class="space-y-4">
+        <div>
+          <label class="text-xs text-slate-400 mb-1 block">Período</label>
+          <div class="flex gap-2">
+            <input id="exportDtIni" type="date" value="2026-01-01" class="flex-1 px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-sm" />
+            <span class="text-slate-400 self-center">até</span>
+            <input id="exportDtFim" type="date" class="flex-1 px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-sm" />
+          </div>
+        </div>
 
-async function processar(){
-  const files = input.files;
-  if (!files.length) {
-    alert("Selecione ao menos um XML.");
-    return;
-  }
+        <div>
+          <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" id="exportApenasPendentes" class="rounded">
+            <span>Exportar apenas NFes pendentes de identificação</span>
+          </label>
+        </div>
 
-  const logEl = document.getElementById("log");
-  logEl.textContent = "Iniciando processamento...\n";
+        <div class="text-xs text-slate-400 bg-slate-800/50 rounded-xl p-3">
+          <div class="font-semibold mb-2">Campos incluídos:</div>
+          <div class="grid grid-cols-2 gap-1">
+            <span>• Chave NFe</span>
+            <span>• Número NFe</span>
+            <span>• NSU</span>
+            <span>• Data Emissão</span>
+            <span>• Fornecedor</span>
+            <span>• Valor Total</span>
+            <span>• ICMS, IPI, PIS, COFINS</span>
+            <span>• Destinatário</span>
+            <span>• Info Complementares</span>
+            <span>• Status e Motivo</span>
+          </div>
+        </div>
 
-  const fd = new FormData();
-  for(const f of files) fd.append("xmls", f);
+        <div id="exportProgress" class="hidden">
+          <div class="flex items-center gap-2 text-sm text-sky-400">
+            <div class="animate-spin w-4 h-4 border-2 border-sky-400 border-t-transparent rounded-full"></div>
+            <span id="exportProgressText">Gerando arquivo...</span>
+          </div>
+        </div>
 
-  try {
-    const r = await fetch("/modulo2/process", {
-      method: "POST",
-      body: fd
-    });
+        <div id="exportResult" class="hidden text-sm"></div>
+      </div>
 
-    const j = await r.json();
+      <div class="flex justify-end gap-2 mt-6">
+        <button class="px-4 py-2 rounded-xl text-sm bg-slate-700 hover:bg-slate-600 border border-slate-600" onclick="fecharModalExportacao()">
+          Cancelar
+        </button>
+        <button id="btnExecutarExportacao" onclick="executarExportacao()" class="px-4 py-2 rounded-xl text-sm bg-emerald-700 hover:bg-emerald-600 border border-emerald-500">
+          Gerar Excel
+        </button>
+      </div>
+    </div>
+  </div>
 
-    logEl.textContent = (j.logs || []).join("\n") || "Processamento concluído.";
-
-    if (j.success) {
-      const a = document.getElementById("download");
-      a.href = j.download_url;
-      a.classList.remove("hidden");
-    } else {
-      alert(j.error || "Erro no processamento");
+  <script>
+    // ============================================
+    // FUNÇÕES BÁSICAS
+    // ============================================
+    function toggleMenu() {
+      const menu = document.getElementById("sideMenu");
+      const backdrop = document.getElementById("menuBackdrop");
+      menu.classList.toggle("open");
+      backdrop.style.display = menu.classList.contains("open") ? "block" : "none";
+    }
+    function scrollToSection(id){
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      toggleMenu();
     }
 
-  } catch (e) {
-    logEl.textContent += "\nErro inesperado no servidor.";
-  }
-}
-</script>
+    function setStatus(text, kind="neutral"){
+      const pill = document.getElementById("statusPill");
+      pill.textContent = text;
+      pill.className = "text-xs px-3 py-1 rounded-full border";
+      const map = {
+        ok: "bg-emerald-900/40 border-emerald-700 text-emerald-200",
+        warn: "bg-amber-900/40 border-amber-700 text-amber-200",
+        bad: "bg-rose-900/40 border-rose-700 text-rose-200",
+        neutral: "bg-slate-700 border-slate-600 text-slate-200"
+      };
+      const klass = map[kind] || map.neutral;
+      pill.classList.add(...klass.split(" "));
+    }
 
+    const BRL = new Intl.NumberFormat("pt-BR", { style:"currency", currency:"BRL" });
+    function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+
+    function todayISO(){
+      const d = new Date();
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const dd = String(d.getDate()).padStart(2,'0');
+      return `${d.getFullYear()}-${mm}-${dd}`;
+    }
+
+    async function apiJSON(url, opts={}){
+      const res = await fetch(url, opts);
+      const data = await res.json().catch(()=>({}));
+      if(!res.ok) throw new Error(data.detail || data.error || ('HTTP ' + res.status));
+      return data;
+    }
+
+    // ============================================
+    // CARREGAR STATUS E INFO
+    // ============================================
+    async function carregarStatusResumo() {
+      try {
+        const data = await apiJSON('/api/modulo2/status/resumo');
+        
+        // Atualizar tooltip de informação
+        document.getElementById('infoUltimaData').textContent = data.ultima_importacao || 'Nenhuma importação';
+        document.getElementById('infoUltimaXmls').textContent = `XMLs importados: ${data.xmls_ultima_importacao || 0}`;
+        document.getElementById('infoProxima').textContent = data.proxima_importacao || '--/--/---- - 00:01';
+        document.getElementById('infoTotal').textContent = data.total_nfes || 0;
+        document.getElementById('infoIdentificadas').textContent = data.identificadas || 0;
+        document.getElementById('infoPendentes').textContent = data.pendencias || 0;
+        
+        // Mostrar/ocultar seção de importação inicial
+        const secImportacaoInicial = document.getElementById('secImportacaoInicial');
+        if (data.banco_vazio) {
+          secImportacaoInicial.classList.remove('hidden');
+        } else {
+          secImportacaoInicial.classList.add('hidden');
+        }
+        
+      } catch(e) {
+        console.error('Erro ao carregar status:', e);
+      }
+    }
+
+    // ============================================
+    // IMPORTAÇÃO INICIAL AUTOMÁTICA (com retry após bloqueio)
+    // ============================================
+    let importacaoEmAndamento = false;
+    let importacaoCancelada = false;
+    const TEMPO_ESPERA_BLOQUEIO_MINUTOS = 70; // 1h10min de espera após bloqueio
+    const MAX_TENTATIVAS = 10; // Máximo de tentativas antes de desistir
+
+    async function verificarBloqueioSefaz() {
+      try {
+        const data = await apiJSON('/api/modulo2/sefaz/verificar-bloqueio');
+        return data;
+      } catch(e) {
+        return { status: 'erro', pode_importar: false, mensagem: 'Erro ao verificar status do SEFAZ: ' + e.message };
+      }
+    }
+
+    function formatarTempo(segundos) {
+      const h = Math.floor(segundos / 3600);
+      const m = Math.floor((segundos % 3600) / 60);
+      const s = segundos % 60;
+      if (h > 0) {
+        return `${h}h ${m.toString().padStart(2, '0')}m ${s.toString().padStart(2, '0')}s`;
+      }
+      return `${m}m ${s.toString().padStart(2, '0')}s`;
+    }
+
+    async function aguardarComCountdown(minutos, msg, btn) {
+      const segundosTotal = minutos * 60;
+      let segundosRestantes = segundosTotal;
+      
+      return new Promise((resolve) => {
+        const interval = setInterval(() => {
+          if (importacaoCancelada) {
+            clearInterval(interval);
+            resolve(false);
+            return;
+          }
+          
+          segundosRestantes--;
+          const tempoFormatado = formatarTempo(segundosRestantes);
+          const progresso = ((segundosTotal - segundosRestantes) / segundosTotal * 100).toFixed(1);
+          
+          msg.innerHTML = `⏳ <b>SEFAZ BLOQUEADO - Aguardando automaticamente...</b><br><br>` +
+            `<div class="w-full bg-slate-700 rounded-full h-3 mb-3">` +
+            `<div class="bg-amber-500 h-3 rounded-full transition-all" style="width: ${progresso}%"></div>` +
+            `</div>` +
+            `Tempo restante: <b>${tempoFormatado}</b><br>` +
+            `O processo continuará automaticamente após a espera.<br><br>` +
+            `<span class="text-slate-400">XMLs já importados estão salvos no banco.</span>`;
+          
+          btn.textContent = `⏳ Aguardando ${tempoFormatado}...`;
+          setStatus(`Aguardando SEFAZ: ${tempoFormatado}`, "warn");
+          
+          if (segundosRestantes <= 0) {
+            clearInterval(interval);
+            resolve(true);
+          }
+        }, 1000);
+      });
+    }
+
+    async function executarTentativaImportacao(msg, btn, tentativa) {
+      msg.className = "mt-3 text-sm px-4 py-3 rounded-xl border bg-sky-900/20 border-sky-700 text-sky-200";
+      msg.innerHTML = `🔄 <b>Tentativa ${tentativa}/${MAX_TENTATIVAS}</b><br>Importando XMLs do SEFAZ... <b>Não feche esta página.</b>`;
+      btn.textContent = `⏳ Importando (${tentativa}/${MAX_TENTATIVAS})...`;
+      setStatus(`Importando... (tentativa ${tentativa})`, "neutral");
+      
+      try {
+        const data = await apiJSON('/api/modulo2/sefaz/importacao-inicial', { method: 'POST' });
+        
+        if (data.success) {
+          return { sucesso: true, dados: data };
+        } else {
+          const errorMsg = data.error || 'Falha na importação';
+          // Verificar se é bloqueio
+          if (errorMsg.includes('656') || errorMsg.includes('BLOQUEADO') || errorMsg.includes('bloqueado')) {
+            return { sucesso: false, bloqueado: true, erro: errorMsg };
+          }
+          return { sucesso: false, bloqueado: false, erro: errorMsg };
+        }
+        
+      } catch(e) {
+        const errorMsg = e?.message || String(e);
+        // Verificar se é bloqueio
+        if (errorMsg.includes('656') || errorMsg.includes('BLOQUEADO') || errorMsg.includes('bloqueado')) {
+          return { sucesso: false, bloqueado: true, erro: errorMsg };
+        }
+        return { sucesso: false, bloqueado: false, erro: errorMsg };
+      }
+    }
+
+    async function executarImportacaoInicial() {
+      if (importacaoEmAndamento) {
+        alert('Já existe uma importação em andamento!');
+        return;
+      }
+      
+      const btn = document.getElementById('btnImportacaoInicial');
+      const msg = document.getElementById('msgImportacaoInicial');
+      
+      // VERIFICAR BLOQUEIO ANTES DE INICIAR
+      msg.classList.remove('hidden');
+      msg.className = "mt-3 text-sm px-4 py-3 rounded-xl border bg-sky-900/20 border-sky-700 text-sky-200";
+      msg.textContent = "🔍 Verificando status do SEFAZ...";
+      
+      const statusSefaz = await verificarBloqueioSefaz();
+      
+      // Confirmação com informações do status
+      const detalhes = statusSefaz.detalhes || {};
+      let avisoInicial = '';
+      if (!statusSefaz.pode_importar) {
+        avisoInicial = `\n\n⚠️ ATENÇÃO: ${statusSefaz.mensagem}\nO sistema aguardará automaticamente se necessário.\n`;
+      }
+      
+      const confirmMsg = `IMPORTAÇÃO INICIAL AUTOMÁTICA\n\n` +
+        `Este processo irá:\n` +
+        `• Resetar os NSUs para buscar desde 01/01/2026\n` +
+        `• Buscar TODAS as XMLs disponíveis\n` +
+        `• Se houver bloqueio, AGUARDAR automaticamente 1h10min\n` +
+        `• Continuar até importar TODOS os XMLs\n` +
+        `• Pode demorar várias horas (processo automático)\n\n` +
+        `Status atual:\n` +
+        `• ${detalhes.empresas || 0} empresa(s) configurada(s)\n` +
+        `• ${detalhes.requisicoes_hora || 0}/${detalhes.limite_hora || 80} requisições/hora usadas` +
+        avisoInicial +
+        `\n\n🤖 O processo é TOTALMENTE AUTOMÁTICO.\nVocê pode deixar a página aberta e fazer outras coisas.\n\nDeseja continuar?`;
+      
+      if (!confirm(confirmMsg)) {
+        msg.classList.add('hidden');
+        return;
+      }
+      
+      // Iniciar processo automático
+      importacaoEmAndamento = true;
+      importacaoCancelada = false;
+      btn.disabled = true;
+      
+      // Adicionar botão de cancelar
+      const btnCancelar = document.createElement('button');
+      btnCancelar.id = 'btnCancelarImportacao';
+      btnCancelar.className = 'ml-3 px-4 py-2 rounded-xl text-sm bg-rose-700 hover:bg-rose-600 border border-rose-500';
+      btnCancelar.textContent = '❌ Cancelar';
+      btnCancelar.onclick = () => {
+        if (confirm('Tem certeza que deseja cancelar a importação?\n\nOs XMLs já importados serão mantidos.')) {
+          importacaoCancelada = true;
+          btnCancelar.disabled = true;
+          btnCancelar.textContent = 'Cancelando...';
+        }
+      };
+      btn.parentNode.insertBefore(btnCancelar, btn.nextSibling);
+      
+      try {
+        // Se estiver bloqueado inicialmente, aguardar primeiro
+        if (!statusSefaz.pode_importar) {
+          msg.className = "mt-3 text-sm px-4 py-3 rounded-xl border bg-amber-900/20 border-amber-700 text-amber-200";
+          msg.innerHTML = `⚠️ SEFAZ bloqueado. Aguardando ${TEMPO_ESPERA_BLOQUEIO_MINUTOS} minutos antes de iniciar...`;
+          
+          const continuar = await aguardarComCountdown(TEMPO_ESPERA_BLOQUEIO_MINUTOS, msg, btn);
+          if (!continuar) {
+            throw new Error('Importação cancelada pelo usuário');
+          }
+        }
+        
+        // Resetar NSUs
+        btn.textContent = '⏳ Resetando NSUs...';
+        msg.className = "mt-3 text-sm px-4 py-3 rounded-xl border bg-sky-900/20 border-sky-700 text-sky-200";
+        msg.innerHTML = "🔄 Resetando NSUs para buscar desde o início...";
+        
+        const resetResult = await apiJSON('/api/modulo2/resetar-para-importacao-inicial', { method: 'POST' });
+        
+        if (!resetResult.success) {
+          throw new Error('Falha ao resetar NSUs: ' + (resetResult.erro || 'Erro desconhecido'));
+        }
+        
+        msg.innerHTML = `✅ NSUs resetados para ${resetResult.empresas_resetadas || 0} empresa(s).<br>🔄 Iniciando importação automática...`;
+        
+        // Loop de tentativas
+        let tentativa = 0;
+        let totalImportado = 0;
+        let tempoTotalSegundos = 0;
+        
+        while (tentativa < MAX_TENTATIVAS && !importacaoCancelada) {
+          tentativa++;
+          
+          const resultado = await executarTentativaImportacao(msg, btn, tentativa);
+          
+          if (resultado.sucesso) {
+            totalImportado += resultado.dados.total || 0;
+            tempoTotalSegundos += resultado.dados.tempo_segundos || 0;
+            
+            // SUCESSO! Importação concluída
+            msg.className = "mt-3 text-sm px-4 py-3 rounded-xl border bg-emerald-900/20 border-emerald-700 text-emerald-200";
+            msg.innerHTML = `✅ <b>IMPORTAÇÃO CONCLUÍDA!</b><br><br>` +
+              `📦 Total de XMLs importados: <b>${totalImportado}</b><br>` +
+              `⏱️ Tempo total: <b>${formatarTempo(tempoTotalSegundos)}</b><br>` +
+              `🔄 Tentativas necessárias: <b>${tentativa}</b>`;
+            setStatus("Importação concluída ✓", "ok");
+            btn.textContent = '✅ Concluído!';
+            
+            // Esconder seção após sucesso
+            setTimeout(() => {
+              document.getElementById('secImportacaoInicial').classList.add('hidden');
+            }, 10000);
+            
+            // Recarregar dados
+            await carregarStatusResumo();
+            await loadPendencias();
+            await loadGastosPorPosto();
+            
+            break; // Sair do loop
+            
+          } else if (resultado.bloqueado) {
+            // BLOQUEIO - Aguardar e tentar novamente
+            totalImportado += 0; // Pode ter importado alguns antes do bloqueio
+            
+            msg.className = "mt-3 text-sm px-4 py-3 rounded-xl border bg-amber-900/20 border-amber-700 text-amber-200";
+            
+            // Atualizar status para mostrar progresso parcial
+            await carregarStatusResumo();
+            
+            const continuar = await aguardarComCountdown(TEMPO_ESPERA_BLOQUEIO_MINUTOS, msg, btn);
+            
+            if (!continuar) {
+              throw new Error('Importação cancelada pelo usuário');
+            }
+            
+            // Continuar para próxima tentativa
+            
+          } else {
+            // ERRO não relacionado a bloqueio
+            throw new Error(resultado.erro);
+          }
+        }
+        
+        if (tentativa >= MAX_TENTATIVAS && !importacaoCancelada) {
+          msg.className = "mt-3 text-sm px-4 py-3 rounded-xl border bg-amber-900/20 border-amber-700 text-amber-200";
+          msg.innerHTML = `⚠️ <b>Limite de tentativas atingido</b><br><br>` +
+            `Foram feitas ${MAX_TENTATIVAS} tentativas.<br>` +
+            `Os XMLs importados até agora foram salvos.<br><br>` +
+            `Você pode tentar novamente mais tarde.`;
+          setStatus("Limite de tentativas", "warn");
+        }
+        
+      } catch(e) {
+        const errorMsg = e?.message || String(e);
+        
+        if (errorMsg.includes('cancelada')) {
+          msg.className = "mt-3 text-sm px-4 py-3 rounded-xl border bg-slate-800 border-slate-600 text-slate-300";
+          msg.innerHTML = `⏹️ <b>Importação cancelada</b><br><br>` +
+            `Os XMLs já importados foram salvos no banco.<br>` +
+            `Você pode continuar mais tarde.`;
+          setStatus("Importação cancelada", "neutral");
+        } else {
+          msg.className = "mt-3 text-sm px-4 py-3 rounded-xl border bg-rose-900/20 border-rose-700 text-rose-200";
+          msg.innerHTML = `❌ <b>Erro na importação:</b><br>${errorMsg}<br><br>` +
+            `Os XMLs já importados foram salvos no banco.`;
+          setStatus("Erro na importação", "bad");
+        }
+        
+        // Recarregar para mostrar o que foi importado
+        await carregarStatusResumo();
+        await loadPendencias();
+        
+      } finally {
+        importacaoEmAndamento = false;
+        btn.disabled = false;
+        btn.textContent = '🚀 Iniciar Importação Completa';
+        
+        // Remover botão de cancelar
+        const btnCancelar = document.getElementById('btnCancelarImportacao');
+        if (btnCancelar) btnCancelar.remove();
+      }
+    }
+
+    // ============================================
+    // CONSULTA E IMPORTAÇÃO NORMAL
+    // ============================================
+    const btnConsultar = document.getElementById("btnConsultarSefaz");
+    const btnImportar  = document.getElementById("btnImportar");
+    const msgConsulta  = document.getElementById("msgConsulta");
+    const dtIni = document.getElementById('dtIni');
+    const dtFim = document.getElementById('dtFim');
+
+    // SEMPRE definir datas fixas: 01/01/2026 até hoje
+    dtIni.value = '2026-01-01';
+    dtFim.value = todayISO();
+
+    btnConsultar.addEventListener("click", async () => {
+      try{
+        setStatus("Consultando SEFAZ…", "neutral");
+        btnImportar.classList.add('hidden');
+
+        const ini = dtIni.value;
+        const fim = dtFim.value;
+        const data = await apiJSON(`/api/modulo2/sefaz/consultar?data_ini=${encodeURIComponent(ini)}&data_fim=${encodeURIComponent(fim)}`);
+        
+        const total = data.total_encontrado || data.found || 0;
+
+        msgConsulta.classList.remove("hidden");
+        msgConsulta.className = "mt-3 text-sm px-4 py-3 rounded-xl border bg-slate-900 border-slate-700 text-slate-200";
+        msgConsulta.textContent = `${total} arquivo(s) novo(s) encontrado(s).`;
+
+        if (total > 0) {
+          btnImportar.classList.remove("hidden");
+        }
+        setStatus("Consulta concluída ✓", "ok");
+      }catch(err){
+        msgConsulta.classList.remove("hidden");
+        msgConsulta.className = "mt-3 text-sm px-4 py-3 rounded-xl border bg-rose-900/20 border-rose-800 text-rose-200";
+        msgConsulta.textContent = "Erro: " + (err?.message || err);
+        setStatus("Erro na consulta", "bad");
+      }
+    });
+
+    btnImportar.addEventListener("click", async () => {
+      try{
+        setStatus("Importando XMLs…", "neutral");
+        const data = await apiJSON('/api/modulo2/sefaz/importar', {method:'POST'});
+        
+        const total = data.total || data.inserted || 0;
+
+        msgConsulta.classList.remove("hidden");
+        msgConsulta.className = "mt-3 text-sm px-4 py-3 rounded-xl border bg-emerald-900/20 border-emerald-800 text-emerald-200";
+        msgConsulta.textContent = `Importação concluída: ${total} XMLs importados.`;
+        setStatus("Importação concluída ✓", "ok");
+
+        btnImportar.classList.add('hidden');
+        await carregarStatusResumo();
+        await loadPendencias();
+      }catch(err){
+        msgConsulta.classList.remove("hidden");
+        msgConsulta.className = "mt-3 text-sm px-4 py-3 rounded-xl border bg-rose-900/20 border-rose-800 text-rose-200";
+        msgConsulta.textContent = "Erro: " + (err?.message || err);
+        setStatus("Erro na importação", "bad");
+      }
+    });
+
+    // ============================================
+    // EXPORTAÇÃO EXCEL
+    // ============================================
+    function abrirModalExportacao() {
+      document.getElementById('exportDtFim').value = todayISO();
+      document.getElementById('exportResult').classList.add('hidden');
+      document.getElementById('exportProgress').classList.add('hidden');
+      document.getElementById('modalExportacao').classList.remove('hidden');
+    }
+
+    function fecharModalExportacao() {
+      document.getElementById('modalExportacao').classList.add('hidden');
+    }
+
+    async function executarExportacao() {
+      const dtIni = document.getElementById('exportDtIni').value;
+      const dtFim = document.getElementById('exportDtFim').value;
+      const apenasPendentes = document.getElementById('exportApenasPendentes').checked;
+      
+      const progress = document.getElementById('exportProgress');
+      const result = document.getElementById('exportResult');
+      const btn = document.getElementById('btnExecutarExportacao');
+      
+      progress.classList.remove('hidden');
+      result.classList.add('hidden');
+      btn.disabled = true;
+      
+      try {
+        const url = `/api/modulo2/exportar/excel?data_inicio=${dtIni}&data_fim=${dtFim}&apenas_pendentes=${apenasPendentes}`;
+        const data = await apiJSON(url);
+        
+        if (data.status === 'ok') {
+          // Extrair nome do arquivo
+          const arquivo = data.arquivo.split(/[\/\\]/).pop();
+          
+          result.className = "text-sm bg-emerald-900/20 border border-emerald-700 text-emerald-200 rounded-xl p-3";
+          result.innerHTML = `
+            ✅ Arquivo gerado com sucesso!<br>
+            <a href="/api/modulo2/exportar/download/${arquivo}" 
+               class="underline text-emerald-400 hover:text-emerald-300 font-semibold"
+               download>
+              📥 Clique aqui para baixar: ${arquivo}
+            </a>
+          `;
+        } else {
+          throw new Error(data.erro || 'Erro ao gerar arquivo');
+        }
+      } catch(e) {
+        result.className = "text-sm bg-rose-900/20 border border-rose-700 text-rose-200 rounded-xl p-3";
+        result.textContent = "❌ Erro: " + (e?.message || e);
+      } finally {
+        progress.classList.add('hidden');
+        result.classList.remove('hidden');
+        btn.disabled = false;
+      }
+    }
+
+    // ============================================
+    // GRÁFICO E DADOS
+    // ============================================
+    let TOTAL_ORCADO_GERAL = 0;
+    let TOTAL_REALIZADO_GERAL = 0;
+    let DADOS_CLIENTES = [];  // Array com dados de cada cliente
+    let clienteAtual = null;  // Cliente selecionado (null = geral)
+
+    function setProgress(scopeLabel, orcado, realizado){
+      document.getElementById("progressScope").textContent = "Escopo: " + scopeLabel;
+      document.getElementById("vOrcado").textContent = BRL.format(orcado);
+      document.getElementById("vRealizado").textContent = BRL.format(realizado);
+
+      const pct = orcado <= 0 ? 0 : (realizado / orcado) * 100;
+      const barColor = pct > 100 ? '#ef4444' : '#10b981';  // Vermelho se passou, verde se ok
+      const bar = document.getElementById("barRealizado");
+      bar.style.width = clamp(pct, 0, 100).toFixed(1) + "%";
+      bar.style.backgroundColor = barColor;
+      
+      const statusText = pct > 100 
+        ? `⚠️ ACIMA do orçado (${pct.toFixed(1)}%)` 
+        : `✓ ${pct.toFixed(1)}% do orçado`;
+      document.getElementById("pctLabel").textContent = statusText;
+    }
+
+    let chartGastos = null;
+    function renderChart(){
+      if(chartGastos) chartGastos.destroy();
+
+      const labels = DADOS_CLIENTES.slice(0, 15).map(d => {
+        // Truncar nomes longos
+        const nome = d.nomecli || 'N/A';
+        return nome.length > 25 ? nome.slice(0, 22) + '...' : nome;
+      });
+      const valores = DADOS_CLIENTES.slice(0, 15).map(d => d.realizado || 0);
+      
+      // Cores: verde se dentro do orçado, vermelho se passou
+      const cores = DADOS_CLIENTES.slice(0, 15).map(d => {
+        const pct = d.orcado > 0 ? (d.realizado / d.orcado * 100) : 0;
+        return pct > 100 ? '#ef4444' : '#0d9488';
+      });
+
+      chartGastos = new Chart(document.getElementById("chartGastos"),{
+        type: "bar",
+        data: { 
+          labels: labels, 
+          datasets: [{ 
+            data: valores, 
+            backgroundColor: cores,
+            borderRadius: 4
+          }] 
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display:false } },
+          scales: { y: { ticks: { callback: (v) => BRL.format(v) } } },
+          onClick: async (evt, elements) => {
+            if(!elements || !elements.length) {
+              // Clicou fora - voltar para geral
+              clienteAtual = null;
+              await loadTotaisGerais();
+              return;
+            }
+            
+            const idx = elements[0].index;
+            const clienteData = DADOS_CLIENTES[idx];
+            if(!clienteData) return;
+            
+            clienteAtual = clienteData.nomecli;
+            setProgress(`Cliente: ${clienteAtual}`, clienteData.orcado, clienteData.realizado);
+          }
+        }
+      });
+    }
+
+    async function loadTotaisGerais() {
+      try {
+        const dataInicio = '2026-01-01';
+        const dataFim = todayISO();
+        
+        const [ano, mes, dia] = dataFim.split('-');
+        document.getElementById('graficoDataFim').textContent = `${dia}/${mes}/${ano}`;
+        
+        // Carregar totais gerais
+        const totais = await apiJSON(`/api/modulo2/totais-gerais?data_ini=${dataInicio}&data_fim=${dataFim}`);
+        TOTAL_ORCADO_GERAL = totais.total_orcado || 0;
+        TOTAL_REALIZADO_GERAL = totais.total_realizado || 0;
+        
+        clienteAtual = null;
+        setProgress(`Geral (01/01/2026 a ${dia}/${mes}/${ano})`, TOTAL_ORCADO_GERAL, TOTAL_REALIZADO_GERAL);
+        
+      } catch(e) {
+        console.error('Erro ao carregar totais:', e);
+        setProgress("Geral (erro ao carregar)", 0, 0);
+      }
+    }
+
+    async function loadGastosPorPosto() {
+      try {
+        const dataInicio = '2026-01-01';
+        const dataFim = todayISO();
+        
+        const [ano, mes, dia] = dataFim.split('-');
+        document.getElementById('graficoDataFim').textContent = `${dia}/${mes}/${ano}`;
+        
+        // Carregar dados por cliente
+        const data = await apiJSON(`/api/modulo2/gastos-por-posto?data_ini=${dataInicio}&data_fim=${dataFim}`);
+        
+        if (Array.isArray(data) && data.length > 0) {
+          DADOS_CLIENTES = data;
+          renderChart();
+        } else {
+          DADOS_CLIENTES = [];
+          renderChart();
+        }
+        
+        // Carregar totais gerais
+        await loadTotaisGerais();
+        
+      } catch(e) {
+        console.error('Erro ao carregar gastos:', e);
+        DADOS_CLIENTES = [];
+        renderChart();
+        setProgress("Geral (erro ao carregar)", 0, 0);
+      }
+    }
+
+    // ============================================
+    // PENDÊNCIAS
+    // ============================================
+    let POSTOS = [];
+    let POSTOS_BY_ID = new Map();
+    let PEND = [];
+
+    async function loadPostos(){
+      try{
+        const data = await apiJSON('/api/modulo2/postos');
+        POSTOS = data.items || data || [];
+        POSTOS_BY_ID = new Map(POSTOS.map(p => [String(p.id), p.nome || p.nomepos]));
+
+        const sel = document.getElementById('selPosto');
+        sel.innerHTML = '<option value="">Selecione…</option>';
+        for(const p of POSTOS){
+          const opt = document.createElement('option');
+          opt.value = String(p.id);
+          opt.textContent = p.nome || p.nomepos;
+          sel.appendChild(opt);
+        }
+      }catch(e){
+        console.error('Erro ao carregar postos:', e);
+      }
+    }
+
+    async function loadPendencias(){
+      try{
+        const data = await apiJSON('/api/modulo2/pendencias?limit=500');
+        const items = data.items || data || [];
+        PEND = items.map(x => ({
+          pendencia_id: x.pendencia_id || x.id,
+          chave: x.chave_acesso || x.chave_nfe || x.chave,
+          valor: Number(x.valor_total || x.valor || 0),
+          fornecedor: x.fornecedor || x.nome_emitente || '-',
+          cliente: x.cliente || '-',
+          posto_id: x.posto_id ? String(x.posto_id) : null,
+          motivo: x.motivo || ''
+        }));
+        
+        document.getElementById('pendenciasSubtitle').textContent = 
+          PEND.length > 0 ? `${PEND.length} pendência(s) para identificação.` : 'Nenhuma pendência.';
+          
+      }catch(e){
+        console.error('Erro ao carregar pendências:', e);
+        PEND = [];
+        document.getElementById('pendenciasSubtitle').textContent = 'Erro ao carregar pendências.';
+      }
+      renderPendencias();
+    }
+
+    function renderPendencias(){
+      const tb = document.getElementById("tbPendencias");
+      tb.innerHTML = "";
+      
+      if (PEND.length === 0) {
+        tb.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Nenhuma pendência encontrada.</td></tr>`;
+        return;
+      }
+      
+      for(let i=0;i<PEND.length;i++){
+        const p = PEND[i];
+        const postoNome = p.posto_id ? (POSTOS_BY_ID.get(String(p.posto_id)) || "(ID " + p.posto_id + ")") : null;
+        const chaveResumida = p.chave.length > 20 ? p.chave.slice(0, 10) + '...' + p.chave.slice(-10) : p.chave;
+        
+        tb.innerHTML += `
+          <tr class="border-b border-slate-700 hover:bg-slate-900/40">
+            <td class="p-2 font-mono text-xs" title="${p.chave}">${chaveResumida}</td>
+            <td class="p-2 text-right">${BRL.format(p.valor)}</td>
+            <td class="p-2">${p.fornecedor}</td>
+            <td class="p-2">${p.cliente}</td>
+            <td class="p-2 text-slate-400">${postoNome || "NÃO IDENTIFICADO"}</td>
+            <td class="p-2">
+              <button class="px-3 py-1.5 rounded-lg text-xs bg-sky-800/60 hover:bg-sky-800 border border-sky-700"
+                      onclick="openIdentifyModal(${i})">
+                Identificar
+              </button>
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    // Modal de identificação
+    let currentPendIndex = null;
+    function openIdentifyModal(i){
+      currentPendIndex = i;
+      const p = PEND[i];
+
+      document.getElementById("mChave").textContent = p.chave;
+      document.getElementById("mValor").textContent = BRL.format(p.valor);
+      document.getElementById("mFornecedor").textContent = p.fornecedor;
+      document.getElementById("mCliente").textContent = p.cliente;
+
+      document.getElementById("selCliente").value = p.cliente || "";
+      document.getElementById("selPosto").value = p.posto_id || "";
+
+      document.getElementById("modalBackdrop").classList.remove("hidden");
+      document.getElementById("modalIdentify").classList.remove("hidden");
+    }
+    function closeIdentifyModal(){
+      document.getElementById("modalBackdrop").classList.add("hidden");
+      document.getElementById("modalIdentify").classList.add("hidden");
+      currentPendIndex = null;
+    }
+    async function saveIdentify(){
+      const posto_id = document.getElementById("selPosto").value;
+      if(!posto_id){
+        alert("Selecione o posto.");
+        return;
+      }
+
+      try{
+        const pendencia_id = PEND[currentPendIndex].pendencia_id;
+        const cliente_id = document.getElementById("selCliente").value || PEND[currentPendIndex].cliente || "";
+        
+        await apiJSON(`/api/modulo2/pendencias/${pendencia_id}/identificar`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({cliente_id: cliente_id, posto_id: Number(posto_id)})
+        });
+        setStatus("Identificação salva ✓", "ok");
+        closeIdentifyModal();
+        await loadPendencias();
+        await carregarStatusResumo();
+      }catch(e){
+        alert('Erro ao salvar: ' + (e?.message || e));
+      }
+    }
+
+    // ============================================
+    // VERIFICAR MODO DEV
+    // ============================================
+    async function verificarModoDesenvolvimento() {
+      try {
+        const resp = await fetch('/api/modulo2/status');
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data.dev_mode) {
+            document.getElementById('devModeBanner').classList.remove('hidden');
+          }
+        }
+      } catch (e) {
+        console.warn('[DEV] Não foi possível verificar modo:', e);
+      }
+    }
+
+    // ============================================
+    // INICIALIZAÇÃO
+    // ============================================
+    async function init() {
+      // Verificar modo DEV primeiro
+      await verificarModoDesenvolvimento();
+      
+      setProgress("Geral (todas as NFs)", ORCADO_GERAL, 0);
+      renderChart();
+      
+      await carregarStatusResumo();
+      await loadPostos();
+      await loadPendencias();
+      await loadGastosPorPosto();
+    }
+    
+    init();
+  </script>
 </body>
 </html>

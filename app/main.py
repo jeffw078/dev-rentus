@@ -5,9 +5,13 @@ import sys
 import importlib
 
 from fastapi import FastAPI, Request, UploadFile, File
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from projects.modulo2.api import router as modulo2_router
+from auth.logger import log_info, log_success, log_error, log_warning
+
+
 
 
 # ============================================================
@@ -35,6 +39,37 @@ for d in [UPLOAD_DIR, OUTPUT_DIR, LOG_DIR, MODULO2_DIR]:
 # FASTAPI
 # ============================================================
 app = FastAPI(title="Rentus Analyzer", version="1.0")
+
+from projects.modulo2.db import init_db
+from projects.modulo2.scheduler import start_scheduler
+
+# Importar sistema de autenticação
+from auth.database import init_auth_db
+from auth.router import router as auth_router
+
+@app.on_event("startup")
+def startup_event():
+    try:
+        # Inicializar banco de autenticação
+        log_info("STARTUP - Inicializando banco de autenticação...")
+        init_auth_db()
+        log_success("STARTUP - Banco de autenticacao inicializado")
+        
+        # Inicializar banco apenas uma vez no startup
+        init_db()
+        
+        # Iniciar agendador de importação automática diária
+        try:
+            start_scheduler()
+            log_success("STARTUP - Agendador de importação automática iniciado")
+        except Exception as e:
+            log_warning(f"STARTUP - Não foi possível iniciar agendador: {e}")
+            
+    except Exception as e:
+        log_error(f"STARTUP - Erro ao inicializar banco: {e}")
+        import traceback
+        traceback.print_exc()
+
 
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
@@ -64,117 +99,287 @@ try:
     from projects.modulo1.Modulo1 import process_modulo1
 except Exception as e:
     process_modulo1 = None
-    print("[WARN] Módulo 1 não carregado:", e)
+    log_warning(f"Módulo 1 não carregado: {e}")
 
 # --- Módulo 2 ---
 try:
     from projects.modulo2 import process_suprimentos_xml
 except Exception as e:
     process_suprimentos_xml = None
-    print("[WARN] Módulo 2 não carregado:", e)
+    log_warning(f"Módulo 2 não carregado: {e}")
 
 
 # ============================================================
 # ROTAS HTML — MÓDULOS 1 AO 16 (SEMPRE PRESENTES)
 # ============================================================
+# IMPORTANTE: Rotas HTML devem ser definidas ANTES do router da API
+# para evitar conflitos de rota
 
 
 @app.get("/", response_class=HTMLResponse)
 async def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse("login_new.html", {"request": request})
 
+@app.get("/auth/set-password", response_class=HTMLResponse)
+async def set_password_page(request: Request):
+    return templates.TemplateResponse("set_password.html", {"request": request})
+
+@app.get("/auth/profile", response_class=HTMLResponse)
+async def profile_page(request: Request):
+    from auth.dependencies_web import require_auth_web
+    user = await require_auth_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
+    return templates.TemplateResponse("profile.html", {"request": request})
+
+@app.get("/auth/change-password", response_class=HTMLResponse)
+async def change_password_page(request: Request):
+    from auth.dependencies_web import require_auth_web
+    user = await require_auth_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
+    return templates.TemplateResponse("change_password.html", {"request": request})
+
+@app.get("/admin/users", response_class=HTMLResponse)
+async def admin_users_page(request: Request):
+    from auth.dependencies_web import require_admin_web
+    user = await require_admin_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
+    return templates.TemplateResponse("admin_users.html", {"request": request})
+
+@app.get("/admin/audit-log", response_class=HTMLResponse)
+async def admin_audit_page(request: Request):
+    from auth.dependencies_web import require_admin_web
+    user = await require_admin_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
+    return templates.TemplateResponse("admin_audit.html", {"request": request})
+
+@app.get("/teste-acesso", response_class=HTMLResponse)
+async def teste_acesso_page(request: Request):
+    from auth.dependencies_web import require_auth_web
+    user = await require_auth_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
+    return templates.TemplateResponse("teste_acesso.html", {"request": request})
+
+
+@app.get("/sitemap", response_class=HTMLResponse)
+async def sitemap_page(request: Request):
+    from auth.dependencies_web import require_auth_web
+    user = await require_auth_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
+    return templates.TemplateResponse("sitemap.html", {"request": request})
 
 @app.get("/index", response_class=HTMLResponse)
 async def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    from auth.dependencies_web import require_auth_web
+    user = await require_auth_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
+    
+    # Passar dados do usuário para o template (para renderização condicional)
+    return templates.TemplateResponse("index.html", {
+        "request": request, 
+        "user": user
+    })
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard_page(request: Request):
+    from auth.dependencies_web import require_auth_web
+    user = await require_auth_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
     return templates.TemplateResponse("dashboard.html", {"request": request})
 
 @app.get("/modulo2/dashboard", response_class=HTMLResponse)
 async def modulo2_dashboard_page(request: Request):
+    from auth.dependencies_web import require_auth_web
+    user = await require_auth_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
     return templates.TemplateResponse("modulo2_dashboard.html", {"request": request})
 
 
 @app.get("/modulo1", response_class=HTMLResponse)
 async def modulo1_page(request: Request):
+    from auth.dependencies_web import require_auth_web
+    user = await require_auth_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
     return templates.TemplateResponse("modulo1.html", {"request": request})
 
 
 @app.get("/modulo2", response_class=HTMLResponse)
 async def modulo2_page(request: Request):
-    return templates.TemplateResponse("modulo2.html", {"request": request})
+    """Página principal do módulo 2 - Dashboard"""
+    from auth.dependencies_web import require_auth_web
+    user = await require_auth_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
+    return templates.TemplateResponse("modulo2_dashboard.html", {"request": request})
+
+
+# ============================================================
+# ROUTERS DA API (incluído DEPOIS das rotas HTML)
+# ============================================================
+# Router de autenticação
+app.include_router(auth_router)
+
+# Router do módulo 2
+app.include_router(modulo2_router)
 
 
 @app.get("/modulo3", response_class=HTMLResponse)
 async def modulo3_page(request: Request):
+    from auth.dependencies_web import require_auth_web
+    user = await require_auth_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
     return templates.TemplateResponse("modulo3.html", {"request": request})
 
 
 @app.get("/modulo4", response_class=HTMLResponse)
 async def modulo4_page(request: Request):
+    from auth.dependencies_web import require_auth_web
+    user = await require_auth_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
     return templates.TemplateResponse("modulo4.html", {"request": request})
 
 
 @app.get("/modulo5", response_class=HTMLResponse)
 async def modulo5_page(request: Request):
+    from auth.dependencies_web import require_auth_web
+    user = await require_auth_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
     return templates.TemplateResponse("modulo5.html", {"request": request})
 
 
 @app.get("/modulo6", response_class=HTMLResponse)
 async def modulo6_page(request: Request):
+    from auth.dependencies_web import require_auth_web
+    user = await require_auth_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
     return templates.TemplateResponse("modulo6.html", {"request": request})
 
 
 @app.get("/modulo7", response_class=HTMLResponse)
 async def modulo7_page(request: Request):
+    from auth.dependencies_web import require_auth_web
+    user = await require_auth_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
     return templates.TemplateResponse("modulo7.html", {"request": request})
 
 
 @app.get("/modulo8", response_class=HTMLResponse)
 async def modulo8_page(request: Request):
+    from auth.dependencies_web import require_auth_web
+    user = await require_auth_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
     return templates.TemplateResponse("modulo8.html", {"request": request})
 
 
 @app.get("/modulo9", response_class=HTMLResponse)
 async def modulo9_page(request: Request):
+    from auth.dependencies_web import require_auth_web
+    user = await require_auth_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
     return templates.TemplateResponse("modulo9.html", {"request": request})
 
 
 @app.get("/modulo10", response_class=HTMLResponse)
 async def modulo10_page(request: Request):
+    from auth.dependencies_web import require_auth_web
+    user = await require_auth_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
     return templates.TemplateResponse("modulo10.html", {"request": request})
 
 
 @app.get("/modulo11", response_class=HTMLResponse)
 async def modulo11_page(request: Request):
+    from auth.dependencies_web import require_auth_web
+    user = await require_auth_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
     return templates.TemplateResponse("modulo11.html", {"request": request})
 
 
 @app.get("/modulo12", response_class=HTMLResponse)
 async def modulo12_page(request: Request):
+    from auth.dependencies_web import require_auth_web
+    user = await require_auth_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
     return templates.TemplateResponse("modulo12.html", {"request": request})
 
 
 @app.get("/modulo13", response_class=HTMLResponse)
 async def modulo13_page(request: Request):
+    from auth.dependencies_web import require_auth_web
+    user = await require_auth_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
     return templates.TemplateResponse("modulo13.html", {"request": request})
 
 
 @app.get("/modulo14", response_class=HTMLResponse)
 async def modulo14_page(request: Request):
+    from auth.dependencies_web import require_auth_web
+    user = await require_auth_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
     return templates.TemplateResponse("modulo14.html", {"request": request})
 
 
 @app.get("/modulo15", response_class=HTMLResponse)
 async def modulo15_page(request: Request):
+    from auth.dependencies_web import require_auth_web
+    user = await require_auth_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
     return templates.TemplateResponse("modulo15.html", {"request": request})
 
 
 @app.get("/modulo16", response_class=HTMLResponse)
 async def modulo16_page(request: Request):
+    from auth.dependencies_web import require_auth_web
+    user = await require_auth_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
     return templates.TemplateResponse("modulo16.html", {"request": request})
+
+
+@app.get("/loyal", response_class=HTMLResponse)
+async def loyal_page(request: Request):
+    """Rota legada - redireciona para /premium"""
+    return RedirectResponse(url="/premium", status_code=status.HTTP_301_MOVED_PERMANENTLY)
+
+
+@app.get("/premium", response_class=HTMLResponse)
+async def premium_page(request: Request):
+    from auth.dependencies_web import require_auth_web
+    user = await require_auth_web(request)
+    if isinstance(user, RedirectResponse):
+        return user
+    
+    # Verificar se o usuário tem o perfil "loyal"
+    user_profiles = [p.lower() for p in user.get("perfis", [])]
+    perfil_principal = user.get("perfil_principal", "").lower()
+    
+    if "loyal" not in user_profiles and perfil_principal != "loyal":
+        # Redirecionar para index se não for Loyal
+        return RedirectResponse(url="/index", status_code=status.HTTP_302_FOUND)
+    
+    return templates.TemplateResponse("loyal.html", {"request": request, "user": user})
 
 
 # ============================================================

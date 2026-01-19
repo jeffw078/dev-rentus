@@ -1,0 +1,9 @@
+{
+    "rules": [
+      {
+        "description": "Não gerar arquivos Markdown",
+        "rule": "Nunca crie arquivos arquivos explicativos em Markdown. crie apenas quando for solicitado explicitamente."
+      }
+    ]
+  }
+  

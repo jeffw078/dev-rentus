@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <title>Área Loyal • Rentus</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes shimmer {
+      0% { background-position: -1000px 0; }
+      100% { background-position: 1000px 0; }
+    }
+    .shimmer {
+      animation: shimmer 3s infinite;
+      background: linear-gradient(to right, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+      background-size: 1000px 100%;
+    }
+    .star-pattern {
+      background-image: radial-gradient(circle, rgba(255,215,0,0.1) 1px, transparent 1px);
+      background-size: 30px 30px;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-900 text-slate-200 min-h-screen">
+
+  <!-- HEADER -->
+  <div class="bg-gradient-to-r from-yellow-900 to-amber-900 border-b-2 border-yellow-500 px-6 py-4 shadow-xl">
+    <div class="flex items-center justify-between max-w-7xl mx-auto">
+      <div class="flex items-center gap-4">
+        <a href="/index" class="text-yellow-300 hover:text-yellow-100 transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+        </a>
+        <div class="flex items-center gap-3">
+          <span class="text-4xl">⭐</span>
+          <div>
+            <h1 class="text-2xl font-bold text-yellow-300">Área Loyal</h1>
+            <p class="text-xs text-yellow-200/70">Acesso Premium Exclusivo</p>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="text-right text-sm">
+          <div class="text-yellow-400 text-xs">Membro Loyal</div>
+          <div class="font-medium text-yellow-200" id="user-name">Usuário</div>
+        </div>
+        <button onclick="logout()" class="px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-sm transition">
+          Sair
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTAINER -->
+  <div class="max-w-7xl mx-auto p-6">
+
+    <!-- BANNER DE BOAS-VINDAS -->
+    <div class="relative bg-gradient-to-br from-yellow-900/50 to-amber-900/50 border-2 border-yellow-500/50 rounded-2xl p-8 mb-8 overflow-hidden star-pattern">
+      <div class="absolute inset-0 shimmer"></div>
+      <div class="relative z-10">
+        <div class="flex items-center gap-4 mb-4">
+          <span class="text-6xl">🏆</span>
+          <div>
+            <h2 class="text-3xl font-bold text-yellow-300 mb-2">Bem-vindo à Área Loyal!</h2>
+            <p class="text-yellow-200/80">Você tem acesso a conteúdos e recursos exclusivos premium.</p>
+          </div>
+        </div>
+        <div class="flex gap-4 mt-6">
+          <div class="bg-yellow-900/30 border border-yellow-600/30 rounded-lg px-4 py-2">
+            <div class="text-xs text-yellow-400">Status</div>
+            <div class="text-sm font-semibold text-yellow-200">Membro Ativo</div>
+          </div>
+          <div class="bg-yellow-900/30 border border-yellow-600/30 rounded-lg px-4 py-2">
+            <div class="text-xs text-yellow-400">Nível</div>
+            <div class="text-sm font-semibold text-yellow-200">Premium</div>
+          </div>
+          <div class="bg-yellow-900/30 border border-yellow-600/30 rounded-lg px-4 py-2">
+            <div class="text-xs text-yellow-400">Benefícios</div>
+            <div class="text-sm font-semibold text-yellow-200">Ilimitados</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECURSOS EXCLUSIVOS -->
+    <div class="mb-8">
+      <h3 class="text-xl font-bold text-slate-100 mb-4 flex items-center gap-2">
+        <span class="text-2xl">💎</span> Recursos Exclusivos
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        <!-- Card 1 -->
+        <div class="bg-slate-800 border-2 border-yellow-600/30 rounded-xl p-6 hover:border-yellow-500 transition group">
+          <div class="text-4xl mb-3">📊</div>
+          <h4 class="text-lg font-semibold text-yellow-300 mb-2 group-hover:text-yellow-200">Relatórios Avançados</h4>
+          <p class="text-sm text-slate-400">Acesse relatórios detalhados e análises aprofundadas com dados exclusivos.</p>
+          <button class="mt-4 px-4 py-2 bg-yellow-600 hover:bg-yellow-500 rounded-lg text-sm font-medium transition">
+            Acessar
+          </button>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="bg-slate-800 border-2 border-yellow-600/30 rounded-xl p-6 hover:border-yellow-500 transition group">
+          <div class="text-4xl mb-3">🎯</div>
+          <h4 class="text-lg font-semibold text-yellow-300 mb-2 group-hover:text-yellow-200">Dashboard Premium</h4>
+          <p class="text-sm text-slate-400">Visualize métricas exclusivas e KPIs personalizados para seu perfil.</p>
+          <button class="mt-4 px-4 py-2 bg-yellow-600 hover:bg-yellow-500 rounded-lg text-sm font-medium transition">
+            Visualizar
+          </button>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="bg-slate-800 border-2 border-yellow-600/30 rounded-xl p-6 hover:border-yellow-500 transition group">
+          <div class="text-4xl mb-3">🔔</div>
+          <h4 class="text-lg font-semibold text-yellow-300 mb-2 group-hover:text-yellow-200">Alertas Prioritários</h4>
+          <p class="text-sm text-slate-400">Receba notificações em tempo real sobre eventos importantes.</p>
+          <button class="mt-4 px-4 py-2 bg-yellow-600 hover:bg-yellow-500 rounded-lg text-sm font-medium transition">
+            Configurar
+          </button>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="bg-slate-800 border-2 border-yellow-600/30 rounded-xl p-6 hover:border-yellow-500 transition group">
+          <div class="text-4xl mb-3">📈</div>
+          <h4 class="text-lg font-semibold text-yellow-300 mb-2 group-hover:text-yellow-200">Análises Preditivas</h4>
+          <p class="text-sm text-slate-400">Utilize IA para prever tendências e tomar decisões estratégicas.</p>
+          <button class="mt-4 px-4 py-2 bg-yellow-600 hover:bg-yellow-500 rounded-lg text-sm font-medium transition">
+            Explorar
+          </button>
+        </div>
+
+        <!-- Card 5 -->
+        <div class="bg-slate-800 border-2 border-yellow-600/30 rounded-xl p-6 hover:border-yellow-500 transition group">
+          <div class="text-4xl mb-3">🎓</div>
+          <h4 class="text-lg font-semibold text-yellow-300 mb-2 group-hover:text-yellow-200">Treinamentos VIP</h4>
+          <p class="text-sm text-slate-400">Acesse cursos e materiais de treinamento exclusivos.</p>
+          <button class="mt-4 px-4 py-2 bg-yellow-600 hover:bg-yellow-500 rounded-lg text-sm font-medium transition">
+            Aprender
+          </button>
+        </div>
+
+        <!-- Card 6 -->
+        <div class="bg-slate-800 border-2 border-yellow-600/30 rounded-xl p-6 hover:border-yellow-500 transition group">
+          <div class="text-4xl mb-3">🤝</div>
+          <h4 class="text-lg font-semibold text-yellow-300 mb-2 group-hover:text-yellow-200">Suporte Dedicado</h4>
+          <p class="text-sm text-slate-400">Atendimento prioritário com tempo de resposta garantido.</p>
+          <button class="mt-4 px-4 py-2 bg-yellow-600 hover:bg-yellow-500 rounded-lg text-sm font-medium transition">
+            Contatar
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ESTATÍSTICAS -->
+    <div class="mb-8">
+      <h3 class="text-xl font-bold text-slate-100 mb-4 flex items-center gap-2">
+        <span class="text-2xl">📈</span> Suas Estatísticas
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+          <div class="text-yellow-400 text-sm mb-1">Acessos este mês</div>
+          <div class="text-3xl font-bold text-slate-100">127</div>
+          <div class="text-xs text-emerald-400 mt-1">↑ 23% vs mês anterior</div>
+        </div>
+
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+          <div class="text-yellow-400 text-sm mb-1">Relatórios gerados</div>
+          <div class="text-3xl font-bold text-slate-100">45</div>
+          <div class="text-xs text-emerald-400 mt-1">↑ 12% vs mês anterior</div>
+        </div>
+
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+          <div class="text-yellow-400 text-sm mb-1">Tempo economizado</div>
+          <div class="text-3xl font-bold text-slate-100">18h</div>
+          <div class="text-xs text-slate-400 mt-1">Neste mês</div>
+        </div>
+
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+          <div class="text-yellow-400 text-sm mb-1">Satisfação</div>
+          <div class="text-3xl font-bold text-slate-100">98%</div>
+          <div class="text-xs text-emerald-400 mt-1">Excelente!</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- NOVIDADES -->
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
+      <h3 class="text-lg font-bold text-slate-100 mb-4 flex items-center gap-2">
+        <span class="text-2xl">🎉</span> Novidades Loyal
+      </h3>
+      <div class="space-y-3">
+        
+        <div class="flex items-start gap-3 p-3 bg-slate-900/50 rounded-lg">
+          <span class="text-2xl">✨</span>
+          <div>
+            <div class="font-semibold text-slate-200">Novo Dashboard de IA lançado!</div>
+            <div class="text-sm text-slate-400">Análises preditivas agora disponíveis para membros Loyal.</div>
+            <div class="text-xs text-slate-500 mt-1">Há 2 dias</div>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3 p-3 bg-slate-900/50 rounded-lg">
+          <span class="text-2xl">🚀</span>
+          <div>
+            <div class="font-semibold text-slate-200">Integração com Power BI</div>
+            <div class="text-sm text-slate-400">Exporte seus relatórios diretamente para o Power BI.</div>
+            <div class="text-xs text-slate-500 mt-1">Há 5 dias</div>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3 p-3 bg-slate-900/50 rounded-lg">
+          <span class="text-2xl">🎓</span>
+          <div>
+            <div class="font-semibold text-slate-200">Novo curso disponível</div>
+            <div class="text-sm text-slate-400">"Análise Avançada de Dados" - Exclusivo para Loyal.</div>
+            <div class="text-xs text-slate-500 mt-1">Há 1 semana</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+<script src="/static/auth.js"></script>
+<script>
+// Carregar nome do usuário
+const user = JSON.parse(localStorage.getItem("user") || "{}");
+document.getElementById("user-name").textContent = user.nome_completo || user.email || "";
+
+// Função de logout
+function logout() {
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("user");
+  window.location.href = "/";
+}
+</script>
+
+</body>
+</html>

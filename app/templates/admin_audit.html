@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <title>Logs de Auditoria • Rentus</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-900 text-slate-200 min-h-screen">
+
+  <!-- HEADER -->
+  <div class="bg-slate-800 border-b border-slate-700 px-6 py-4">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <a href="/index" class="text-slate-400 hover:text-slate-200">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+        </a>
+        <h1 class="text-2xl font-bold text-slate-100">📋 Logs de Auditoria</h1>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-sm text-slate-400" id="user-name"></span>
+        <button onclick="logout()" class="px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-sm">
+          Sair
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTAINER -->
+  <div class="max-w-7xl mx-auto p-6">
+
+    <!-- FILTROS -->
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-6">
+      <h2 class="text-lg font-semibold mb-4 text-slate-100">🔍 Filtros</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        
+        <!-- Categoria -->
+        <div>
+          <label class="text-sm text-slate-300 block mb-2">Categoria</label>
+          <select id="filtro-categoria" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-slate-200">
+            <option value="">Todas</option>
+            <option value="auth">🔐 Autenticação</option>
+            <option value="usuarios">👥 Usuários</option>
+            <option value="perfis">🎭 Perfis</option>
+            <option value="permissoes">🔑 Permissões</option>
+            <option value="modulos">📦 Módulos</option>
+            <option value="dados">💾 Dados</option>
+            <option value="configuracoes">⚙️ Configurações</option>
+            <option value="sistema">🖥️ Sistema</option>
+          </select>
+        </div>
+
+        <!-- Ação -->
+        <div>
+          <label class="text-sm text-slate-300 block mb-2">Ação</label>
+          <select id="filtro-acao" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-slate-200">
+            <option value="">Todas</option>
+            <option value="login">Login</option>
+            <option value="logout">Logout</option>
+            <option value="login_falha">Login Falha</option>
+            <option value="usuario_bloqueado">Usuário Bloqueado</option>
+            <option value="criar_usuario">Criar Usuário</option>
+            <option value="editar_usuario">Editar Usuário</option>
+            <option value="deletar_usuario">Deletar Usuário</option>
+          </select>
+        </div>
+
+        <!-- Apenas Falhas -->
+        <div class="flex items-end">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="filtro-falhas" class="w-4 h-4 rounded bg-slate-900 border-slate-700">
+            <span class="text-sm text-slate-300">Apenas falhas</span>
+          </label>
+        </div>
+
+      </div>
+
+      <div class="flex gap-3 mt-4">
+        <button onclick="aplicarFiltros()" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm font-medium">
+          Aplicar Filtros
+        </button>
+        <button onclick="limparFiltros()" class="px-6 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium">
+          Limpar
+        </button>
+        <button onclick="exportarLogs()" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-medium ml-auto">
+          📥 Exportar CSV
+        </button>
+      </div>
+    </div>
+
+    <!-- ESTATÍSTICAS -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6" id="stats-container">
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+        <div class="text-slate-400 text-sm mb-1">Total de Logs</div>
+        <div class="text-2xl font-bold text-slate-100" id="stat-total">-</div>
+      </div>
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+        <div class="text-slate-400 text-sm mb-1">Falhas</div>
+        <div class="text-2xl font-bold text-red-400" id="stat-falhas">-</div>
+      </div>
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+        <div class="text-slate-400 text-sm mb-1">Sucessos</div>
+        <div class="text-2xl font-bold text-emerald-400" id="stat-sucessos">-</div>
+      </div>
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+        <div class="text-slate-400 text-sm mb-1">Taxa de Sucesso</div>
+        <div class="text-2xl font-bold text-blue-400" id="stat-taxa">-</div>
+      </div>
+    </div>
+
+    <!-- TABELA DE LOGS -->
+    <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+      
+      <div class="p-4 border-b border-slate-700 flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-slate-100">📜 Registros</h2>
+        <div class="text-sm text-slate-400" id="total-logs">Carregando...</div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-slate-900/50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Data/Hora</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Usuário</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Categoria</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Ação</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Descrição</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Status</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">IP</th>
+            </tr>
+          </thead>
+          <tbody id="logs-tbody" class="divide-y divide-slate-700">
+            <!-- Logs serão inseridos aqui via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- LOADING -->
+      <div id="loading" class="p-8 text-center hidden">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-slate-600 border-t-emerald-500"></div>
+        <p class="mt-3 text-slate-400">Carregando logs...</p>
+      </div>
+
+      <!-- EMPTY STATE -->
+      <div id="empty-state" class="p-8 text-center hidden">
+        <div class="text-slate-500 text-4xl mb-3">📭</div>
+        <p class="text-slate-400">Nenhum log encontrado</p>
+      </div>
+
+    </div>
+
+    <!-- PAGINAÇÃO -->
+    <div class="flex items-center justify-between mt-6">
+      <button onclick="paginaAnterior()" id="btn-anterior" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+        ← Anterior
+      </button>
+      <div class="text-sm text-slate-400">
+        Página <span id="pagina-atual">1</span>
+      </div>
+      <button onclick="proximaPagina()" id="btn-proxima" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+        Próxima →
+      </button>
+    </div>
+
+  </div>
+
+<script>
+// Estado da aplicação
+let paginaAtual = 1;
+const itensPorPagina = 50;
+let logs = [];
+
+// Carregar nome do usuário
+const user = JSON.parse(localStorage.getItem("user") || "{}");
+document.getElementById("user-name").textContent = user.nome_completo || user.email || "";
+
+// Função de logout
+function logout() {
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("user");
+  window.location.href = "/";
+}
+
+// Carregar logs
+async function carregarLogs() {
+  const loading = document.getElementById("loading");
+  const emptyState = document.getElementById("empty-state");
+  const tbody = document.getElementById("logs-tbody");
+  
+  loading.classList.remove("hidden");
+  emptyState.classList.add("hidden");
+  tbody.innerHTML = "";
+
+  try {
+    const token = localStorage.getItem("access_token");
+    
+    // Construir query params
+    const params = new URLSearchParams({
+      limit: itensPorPagina,
+      offset: (paginaAtual - 1) * itensPorPagina
+    });
+
+    // Adicionar filtros
+    const categoria = document.getElementById("filtro-categoria").value;
+    const acao = document.getElementById("filtro-acao").value;
+    const apenasfalhas = document.getElementById("filtro-falhas").checked;
+
+    if (categoria) params.append("categoria", categoria);
+    if (acao) params.append("acao", acao);
+    if (apenasfalhas) params.append("apenas_falhas", "true");
+
+    const response = await fetch(`/api/auth/audit-log?${params}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error("Erro ao carregar logs");
+    }
+
+    logs = await response.json();
+    
+    loading.classList.add("hidden");
+
+    if (logs.length === 0) {
+      emptyState.classList.remove("hidden");
+      document.getElementById("total-logs").textContent = "0 registros";
+      return;
+    }
+
+    // Renderizar logs
+    renderizarLogs();
+    
+    // Atualizar contador
+    document.getElementById("total-logs").textContent = `${logs.length} registro(s) nesta página`;
+    
+    // Atualizar botões de paginação
+    document.getElementById("btn-anterior").disabled = paginaAtual === 1;
+    document.getElementById("btn-proxima").disabled = logs.length < itensPorPagina;
+    document.getElementById("pagina-atual").textContent = paginaAtual;
+
+    // Carregar estatísticas
+    carregarEstatisticas();
+
+  } catch (error) {
+    console.error("Erro ao carregar logs:", error);
+    loading.classList.add("hidden");
+    emptyState.classList.remove("hidden");
+    document.getElementById("empty-state").innerHTML = `
+      <div class="text-red-500 text-4xl mb-3">⚠️</div>
+      <p class="text-red-400">Erro ao carregar logs</p>
+    `;
+  }
+}
+
+// Renderizar logs na tabela
+function renderizarLogs() {
+  const tbody = document.getElementById("logs-tbody");
+  tbody.innerHTML = "";
+
+  logs.forEach(log => {
+    const tr = document.createElement("tr");
+    tr.className = "hover:bg-slate-700/50 transition";
+    
+    // Badge de categoria
+    const categoriaBadge = getCategoriaIcon(log.categoria);
+    
+    // Badge de status
+    const statusBadge = log.sucesso 
+      ? '<span class="px-2 py-1 bg-emerald-900/30 text-emerald-400 rounded text-xs">✓ Sucesso</span>'
+      : '<span class="px-2 py-1 bg-red-900/30 text-red-400 rounded text-xs">✗ Falha</span>';
+
+    tr.innerHTML = `
+      <td class="px-4 py-3 text-sm">
+        <div class="font-medium text-slate-200">${log.data_hora_formatada || log.criado_em}</div>
+      </td>
+      <td class="px-4 py-3 text-sm">
+        <div class="text-slate-300">${log.user_email || '-'}</div>
+        ${log.user_id ? `<div class="text-xs text-slate-500">ID: ${log.user_id}</div>` : ''}
+      </td>
+      <td class="px-4 py-3 text-sm">
+        ${categoriaBadge}
+      </td>
+      <td class="px-4 py-3 text-sm">
+        <span class="text-slate-300 font-mono text-xs">${log.acao || '-'}</span>
+      </td>
+      <td class="px-4 py-3 text-sm max-w-md">
+        <div class="text-slate-300 truncate" title="${log.descricao || '-'}">${log.descricao || '-'}</div>
+        ${log.erro_mensagem ? `<div class="text-xs text-red-400 mt-1">${log.erro_mensagem}</div>` : ''}
+      </td>
+      <td class="px-4 py-3 text-sm">
+        ${statusBadge}
+      </td>
+      <td class="px-4 py-3 text-sm text-slate-400 font-mono text-xs">
+        ${log.ip_address || '-'}
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+}
+
+// Ícones de categoria
+function getCategoriaIcon(categoria) {
+  const badges = {
+    'auth': '<span class="px-2 py-1 bg-blue-900/30 text-blue-400 rounded text-xs">🔐 Auth</span>',
+    'usuarios': '<span class="px-2 py-1 bg-purple-900/30 text-purple-400 rounded text-xs">👥 Usuários</span>',
+    'perfis': '<span class="px-2 py-1 bg-pink-900/30 text-pink-400 rounded text-xs">🎭 Perfis</span>',
+    'permissoes': '<span class="px-2 py-1 bg-yellow-900/30 text-yellow-400 rounded text-xs">🔑 Permissões</span>',
+    'modulos': '<span class="px-2 py-1 bg-green-900/30 text-green-400 rounded text-xs">📦 Módulos</span>',
+    'dados': '<span class="px-2 py-1 bg-cyan-900/30 text-cyan-400 rounded text-xs">💾 Dados</span>',
+    'configuracoes': '<span class="px-2 py-1 bg-orange-900/30 text-orange-400 rounded text-xs">⚙️ Config</span>',
+    'sistema': '<span class="px-2 py-1 bg-slate-700 text-slate-300 rounded text-xs">🖥️ Sistema</span>'
+  };
+  return badges[categoria] || `<span class="px-2 py-1 bg-slate-700 text-slate-300 rounded text-xs">${categoria || '-'}</span>`;
+}
+
+// Carregar estatísticas
+async function carregarEstatisticas() {
+  try {
+    const token = localStorage.getItem("access_token");
+    const response = await fetch("/api/auth/audit-log/stats", {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    if (response.ok) {
+      const stats = await response.json();
+      
+      document.getElementById("stat-total").textContent = stats.total || 0;
+      document.getElementById("stat-falhas").textContent = stats.total_falhas || 0;
+      
+      const sucessos = (stats.total || 0) - (stats.total_falhas || 0);
+      document.getElementById("stat-sucessos").textContent = sucessos;
+      
+      const taxa = stats.total > 0 ? ((sucessos / stats.total) * 100).toFixed(1) : 0;
+      document.getElementById("stat-taxa").textContent = taxa + "%";
+    }
+  } catch (error) {
+    console.error("Erro ao carregar estatísticas:", error);
+  }
+}
+
+// Aplicar filtros
+function aplicarFiltros() {
+  paginaAtual = 1;
+  carregarLogs();
+}
+
+// Limpar filtros
+function limparFiltros() {
+  document.getElementById("filtro-categoria").value = "";
+  document.getElementById("filtro-acao").value = "";
+  document.getElementById("filtro-falhas").checked = false;
+  paginaAtual = 1;
+  carregarLogs();
+}
+
+// Paginação
+function proximaPagina() {
+  paginaAtual++;
+  carregarLogs();
+}
+
+function paginaAnterior() {
+  if (paginaAtual > 1) {
+    paginaAtual--;
+    carregarLogs();
+  }
+}
+
+// Exportar logs para CSV
+function exportarLogs() {
+  if (logs.length === 0) {
+    alert("Nenhum log para exportar");
+    return;
+  }
+
+  const headers = ["Data/Hora", "Usuário", "Categoria", "Ação", "Descrição", "Status", "IP"];
+  const rows = logs.map(log => [
+    log.data_hora_formatada || log.criado_em,
+    log.user_email || '-',
+    log.categoria || '-',
+    log.acao || '-',
+    (log.descricao || '-').replace(/"/g, '""'),
+    log.sucesso ? 'Sucesso' : 'Falha',
+    log.ip_address || '-'
+  ]);
+
+  let csv = headers.join(",") + "\n";
+  rows.forEach(row => {
+    csv += row.map(cell => `"${cell}"`).join(",") + "\n";
+  });
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  
+  link.setAttribute("href", url);
+  link.setAttribute("download", `logs_auditoria_${new Date().toISOString().split('T')[0]}.csv`);
+  link.style.visibility = "hidden";
+  
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// Carregar logs ao iniciar
+carregarLogs();
+</script>
+
+</body>
+</html>
