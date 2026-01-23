@@ -1296,7 +1296,7 @@ def listar_orcado_por_posto(posto_id: int = None, ano_mes: str = None) -> List[d
 # ================================
 
 def listar_pendencias_db(limit: int = 500, data_ini: date = None, data_fim: date = None) -> List[dict]:
-    """Lista pendências de identificação de posto com filtro opcional por data"""
+    """Lista pendências de identificação de posto com filtro opcional por data - APENAS DADOS DO JSON"""
     conn = None
     try:
         conn = get_conn()
@@ -1318,6 +1318,7 @@ def listar_pendencias_db(limit: int = 500, data_ini: date = None, data_fim: date
             FROM modulo2_pendencias p
             LEFT JOIN modulo2_nfe n ON n.chave_acesso = p.chave_nfe
             WHERE p.status = 'pendente'
+            AND n.xml LIKE '%<origem>JSON</origem>%'
         """
         
         params = []
@@ -1448,6 +1449,283 @@ def atualizar_pendencia_com_posto(pendencia_id: int, posto_id: int, cliente_nome
     finally:
         if conn:
             conn.close()
+
+
+# ================================
+# CONSULTAS PARA DASHBOARD (JSON)
+# ================================
+
+def obter_total_nfes(cliente_filtro: str = None, posto_filtro: int = None) -> dict:
+    """
+    Retorna estatísticas totais de NFes.
+    Se cliente_filtro fornecido, filtra por cliente.
+    Se posto_filtro fornecido, filtra por posto (requer cliente também).
+    """
+    conn = None
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
+        
+        # Query base - FILTRAR APENAS DADOS DO JSON (XML contém "<origem>JSON</origem>")
+        query = """
+            SELECT 
+                COUNT(DISTINCT n.id) as total_nfes,
+                COUNT(DISTINCT CASE WHEN n.status = 'identificado' THEN n.id END) as nfes_identificadas,
+                COUNT(DISTINCT CASE WHEN n.status = 'pendente' THEN n.id END) as nfes_pendentes,
+                COALESCE(SUM(n.valor_total), 0) as valor_total,
+                (SELECT COUNT(*) FROM modulo2_nfe_itens i WHERE i.nfe_id IN (SELECT id FROM modulo2_nfe WHERE xml LIKE '%<origem>JSON</origem>%')) as total_produtos
+            FROM modulo2_nfe n
+            LEFT JOIN modulo2_postos_trabalho pt ON pt.id = n.posto_id
+            WHERE n.xml LIKE '%<origem>JSON</origem>%'
+        """
+        
+        params = []
+        
+        if cliente_filtro:
+            query += " AND pt.nomecli = ?"
+            params.append(cliente_filtro)
+            
+            if posto_filtro:
+                query += " AND pt.nomepos = ?"
+                params.append(posto_filtro)
+        
+        cur.execute(query, params)
+        row = cur.fetchone()
+        r = _row_to_dict(row)
+        
+        cur.close()
+        
+        return {
+            "total_nfes": r.get("total_nfes", 0) or 0,
+            "nfes_identificadas": r.get("nfes_identificadas", 0) or 0,
+            "nfes_pendentes": r.get("nfes_pendentes", 0) or 0,
+            "valor_total": float(r.get("valor_total", 0) or 0),
+            "total_realizado": float(r.get("valor_total", 0) or 0),  # Mesmo valor, mantém consistência
+            "total_produtos": r.get("total_produtos", 0) or 0
+        }
+        
+    except Exception as e:
+        print(f"[DB] ERRO ao obter total de NFes: {e}")
+        return {
+            "total_nfes": 0,
+            "nfes_identificadas": 0,
+            "nfes_pendentes": 0,
+            "valor_total": 0.0,
+            "total_produtos": 0
+        }
+    finally:
+        if conn:
+            try:
+                conn.close()
+            except:
+                pass
+
+
+def listar_clientes_distintos() -> List[str]:
+    """Lista todos os clientes distintos (nomecli) do banco."""
+    conn = None
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            SELECT DISTINCT nomecli
+            FROM modulo2_postos_trabalho
+            WHERE nomecli IS NOT NULL AND nomecli != ''
+            ORDER BY nomecli
+        """)
+        
+        rows = cur.fetchall()
+        clientes = [r[0] for r in rows if r[0]]
+        
+        cur.close()
+        return clientes
+        
+    except Exception as e:
+        print(f"[DB] ERRO ao listar clientes: {e}")
+        return []
+    finally:
+        if conn:
+            try:
+                conn.close()
+            except:
+                pass
+
+
+def listar_postos_por_cliente(cliente: str) -> List[dict]:
+    """Lista todos os postos de um cliente específico."""
+    conn = None
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            SELECT id, codigo, nomecli, nomepos
+            FROM modulo2_postos_trabalho
+            WHERE nomecli = ?
+            ORDER BY nomepos
+        """, (cliente,))
+        
+        rows = cur.fetchall()
+        result = []
+        for row in rows:
+            r = _row_to_dict(row)
+            result.append({
+                "id": r.get("id"),
+                "codigo": r.get("codigo", ""),
+                "nomecli": r.get("nomecli", ""),
+                "nomepos": r.get("nomepos", "")
+            })
+        
+        cur.close()
+        return result
+        
+    except Exception as e:
+        print(f"[DB] ERRO ao listar postos por cliente: {e}")
+        return []
+    finally:
+        if conn:
+            try:
+                conn.close()
+            except:
+                pass
+
+
+def listar_produtos_agregados(cliente_filtro: str = None, posto_filtro: str = None, limit: int = 50) -> List[dict]:
+    """
+    Lista produtos agregados (soma de quantidades e valores por produto).
+    Filtra por cliente e/ou posto se fornecido.
+    """
+    conn = None
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
+        
+        query = """
+            SELECT 
+                i.descricao_produto as produto,
+                i.ncm,
+                SUM(i.quantidade) as quantidade_total,
+                SUM(i.valor_total) as valor_total,
+                COUNT(DISTINCT i.nfe_id) as total_nfes
+            FROM modulo2_nfe_itens i
+            INNER JOIN modulo2_nfe n ON n.id = i.nfe_id
+            LEFT JOIN modulo2_postos_trabalho pt ON pt.id = n.posto_id
+            WHERE i.descricao_produto IS NOT NULL AND i.descricao_produto != ''
+            AND n.xml LIKE '%<origem>JSON</origem>%'
+        """
+        
+        params = []
+        
+        if cliente_filtro:
+            query += " AND pt.nomecli = ?"
+            params.append(cliente_filtro)
+            
+            if posto_filtro:
+                query += " AND pt.nomepos = ?"
+                params.append(posto_filtro)
+        
+        query += """
+            GROUP BY i.descricao_produto, i.ncm
+            ORDER BY valor_total DESC
+            LIMIT ?
+        """
+        params.append(limit)
+        
+        cur.execute(query, params)
+        rows = cur.fetchall()
+        
+        result = []
+        for row in rows:
+            r = _row_to_dict(row)
+            result.append({
+                "produto": r.get("produto", ""),
+                "ncm": r.get("ncm", ""),
+                "quantidade_total": float(r.get("quantidade_total", 0) or 0),
+                "valor_total": float(r.get("valor_total", 0) or 0),
+                "total_nfes": r.get("total_nfes", 0) or 0
+            })
+        
+        cur.close()
+        return result
+        
+    except Exception as e:
+        print(f"[DB] ERRO ao listar produtos agregados: {e}")
+        return []
+    finally:
+        if conn:
+            try:
+                conn.close()
+            except:
+                pass
+
+
+def listar_gastos_por_cliente_agregado(cliente_filtro: str = None) -> List[dict]:
+    """
+    Lista gastos agregados por cliente (para gráfico de clientes).
+    Se cliente_filtro fornecido, retorna apenas aquele cliente.
+    """
+    conn = None
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
+        
+        query = """
+            SELECT 
+                pt.nomecli as cliente,
+                COALESCE(SUM(n.valor_total), 0) as realizado,
+                COUNT(DISTINCT n.id) as total_nfes,
+                COUNT(DISTINCT pt.id) as total_postos
+            FROM modulo2_postos_trabalho pt
+            LEFT JOIN modulo2_nfe n ON n.posto_id = pt.id AND n.xml LIKE '%<origem>JSON</origem>%'
+            WHERE pt.nomecli IS NOT NULL AND pt.nomecli != ''
+        """
+        
+        params = []
+        
+        if cliente_filtro:
+            query += " AND pt.nomecli = ?"
+            params.append(cliente_filtro)
+        
+        query += """
+            GROUP BY pt.nomecli
+            ORDER BY realizado DESC
+        """
+        
+        cur.execute(query, params)
+        rows = cur.fetchall()
+        
+        result = []
+        for row in rows:
+            r = _row_to_dict(row)
+            cliente = r.get("cliente", "")
+            realizado = float(r.get("realizado", 0) or 0)
+            # Orçado = 2x realizado (conforme solicitado)
+            orcado = realizado * 2.0
+            status = orcado - realizado
+            
+            result.append({
+                "nomecli": cliente,
+                "nome": cliente,  # Compatibilidade
+                "orcado": orcado,
+                "realizado": realizado,
+                "status": status,
+                "total_nfes": r.get("total_nfes", 0) or 0,
+                "total_postos": r.get("total_postos", 0) or 0
+            })
+        
+        cur.close()
+        return result
+        
+    except Exception as e:
+        print(f"[DB] ERRO ao listar gastos por cliente: {e}")
+        return []
+    finally:
+        if conn:
+            try:
+                conn.close()
+            except:
+                pass
 
 
 # ================================

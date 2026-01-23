@@ -194,6 +194,20 @@ async def dashboard_page(request: Request):
         return user
     return templates.TemplateResponse("dashboard.html", {"request": request})
 
+@app.get("/modulo2", response_class=HTMLResponse)
+async def modulo2_page(request: Request):
+    """Rota principal do módulo 2 - redireciona para o dashboard"""
+    print("[DEBUG] Entrando em /modulo2")
+    from auth.dependencies_web import require_auth_web
+    print("[DEBUG] Chamando require_auth_web")
+    user = await require_auth_web(request)
+    print(f"[DEBUG] User retornado: {type(user)}")
+    if isinstance(user, RedirectResponse):
+        print("[DEBUG] Redirecionando para login")
+        return user
+    print("[DEBUG] Renderizando template")
+    return templates.TemplateResponse("modulo2_dashboard.html", {"request": request, "user": user})
+
 @app.get("/modulo2/dashboard", response_class=HTMLResponse)
 async def modulo2_dashboard_page(request: Request):
     from auth.dependencies_web import require_auth_web
@@ -212,14 +226,14 @@ async def modulo1_page(request: Request):
     return templates.TemplateResponse("modulo1.html", {"request": request})
 
 
-@app.get("/modulo2", response_class=HTMLResponse)
-async def modulo2_page(request: Request):
-    """Página principal do módulo 2 - Dashboard"""
+@app.get("/suprimentos", response_class=HTMLResponse)
+async def suprimentos_page(request: Request):
+    """Página principal do módulo 2 - Dashboard (alias para /modulo2)"""
     from auth.dependencies_web import require_auth_web
     user = await require_auth_web(request)
     if isinstance(user, RedirectResponse):
         return user
-    return templates.TemplateResponse("modulo2_dashboard.html", {"request": request})
+    return templates.TemplateResponse("modulo2_dashboard.html", {"request": request, "user": user})
 
 
 # ============================================================

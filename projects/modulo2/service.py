@@ -95,22 +95,15 @@ def consultar_sefaz_quantidade(
     print(f"[SERVICE] CONSULTA SEFAZ - Data: {data_ini} a {data_fim}")
     
     # ========================================
-    # MODO DEV: Retornar dados mockados
+    # IMPORTAÇÃO DESABILITADA - USE JSON
     # ========================================
-    if DEV_MODE:
-        print(f"[SERVICE] Modo: DESENVOLVIMENTO (dados mockados)")
-        # Simular XMLs disponíveis baseado no período
-        dias = (data_fim - data_ini).days + 1
-        total_mock = random.randint(dias * 2, dias * 5)  # 2-5 XMLs por dia
-        return {
-            "status": "success",
-            "total_encontrado": total_mock,
-            "data_inicio": data_ini.isoformat(),
-            "data_fim": data_fim.isoformat(),
-            "empresas_consultadas": 3,
-            "modo": "desenvolvimento",
-            "mensagem": f"[MODO DEV] {total_mock} XMLs simulados disponíveis para importação"
-        }
+    # Sistema configurado para usar APENAS arquivo JSON (produtos_com_posto.json)
+    return {
+        "status": "error",
+        "mensagem": "❌ CONSULTA SEFAZ DESABILITADA",
+        "instrucoes": "Use arquivo: produtos_com_posto.json",
+        "comando": "python projects/modulo2/importar_json_produtos.py"
+    }
     
     # ========================================
     # MODO PRODUÇÃO: Consultar SEFAZ real
@@ -435,51 +428,17 @@ def importar_xmls_sefaz(
     # ========================================
     # MODO DEV: Gerar XMLs mockados
     # ========================================
-    if DEV_MODE:
-        print(f"[SERVICE] Modo: DESENVOLVIMENTO (gerando XMLs mockados)")
-        
-        # Simular XMLs baseado no período
-        dias = (data_fim - data_ini).days + 1
-        qtd_xmls = random.randint(dias * 2, dias * 5)
-        
-        # CNPJs fictícios para mock
-        cnpjs_mock = ["12817803000112", "08818229000140", "56419492000109"]
-        
-        xmls_gerados = []
-        nsu_base = 1000
-        
-        for i in range(qtd_xmls):
-            cnpj = random.choice(cnpjs_mock)
-            nsu = nsu_base + i
-            # Gerar data aleatória no período
-            dias_offset = random.randint(0, dias - 1)
-            data_xml = data_ini + timedelta(days=dias_offset)
-            
-            xml_content = _gerar_xml_mock(cnpj, nsu, data_xml)
-            xmls_gerados.append((str(nsu), xml_content))
-        
-        # Salvar XMLs mockados no banco
-        if xmls_gerados:
-            cnpj_principal = cnpjs_mock[0]
-            salvar_xmls_e_nsu(cnpj_principal, xmls_gerados, nsu_base + qtd_xmls)
-            
-            # Processar cada XML para criar pendências
-            for nsu_str, xml_content in xmls_gerados:
-                processar_xml_e_criar_pendencias(xml_content)
-        
-        return {
-            "success": True,
-            "total_importado": len(xmls_gerados),
-            "total_encontrado": len(xmls_gerados),
-            "modo": "desenvolvimento",
-            "mensagem": f"[MODO DEV] {len(xmls_gerados)} XMLs mockados importados com sucesso"
-        }
+    # IMPORTAÇÃO DESABILITADA - USE JSON
+    # ========================================
+    # Sistema configurado para usar APENAS arquivo JSON (produtos_com_posto.json)
+    return {
+        "status": "error",
+        "mensagem": "❌ IMPORTAÇÃO VIA SEFAZ DESABILITADA",
+        "instrucoes": "Use arquivo: produtos_com_posto.json",
+        "comando": "python projects/modulo2/importar_json_produtos.py"
+    }
     
     # ========================================
-    # MODO PRODUÇÃO: Consultar SEFAZ real
-    # ========================================
-    print(f"[SERVICE] Modo: PRODUÇÃO (SEFAZ REAL)")
-    
     # Verificar se existe cache válido do preview
     cache = get_preview_cache()
     cache_data = cache.get()

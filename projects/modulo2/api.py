@@ -214,40 +214,72 @@ def gastos_por_posto(
 
 @router.get("/totais-gerais")
 def totais_gerais(
-    data_ini: Optional[date] = Query(None, description="Data inicial do filtro (opcional)"),
-    data_fim: Optional[date] = Query(None, description="Data final do filtro (opcional)")
+    data_ini: Optional[str] = Query(None, description="Data inicial do filtro (opcional)"),
+    data_fim: Optional[str] = Query(None, description="Data final do filtro (opcional)"),
+    cliente: Optional[str] = Query(None, description="Filtrar por cliente"),
+    posto: Optional[int] = Query(None, description="Filtrar por posto")
 ):
     """
     Retorna totais gerais para o dashboard: orçado total e realizado total.
+    Suporta filtros por data, cliente e posto.
     """
     try:
-        from .db import get_conn, _row_to_dict
+        from .db import get_conn
         
         conn = get_conn()
         cur = conn.cursor()
         
-        # Total orçado (soma de todos os postos)
-        cur.execute("SELECT COALESCE(SUM(valor_orcado), 0) as total_orcado FROM modulo2_postos_trabalho")
-        row = cur.fetchone()
-        total_orcado = float(row[0]) if row else 0.0
-        
-        # Total realizado (soma das NFes no período)
-        query = "SELECT COALESCE(SUM(valor_total), 0) as total_realizado FROM modulo2_nfe WHERE 1=1"
-        params = []
+        # Construir WHERE clause dinâmico para NFes
+        nfe_conditions = ["xml LIKE '%<origem>JSON</origem>%'"]
+        nfe_params = []
         
         if data_ini:
-            query += " AND data_emissao >= ?"
-            params.append(str(data_ini))
+            nfe_conditions.append("date(data_emissao) >= ?")
+            nfe_params.append(data_ini)
         
         if data_fim:
-            query += " AND data_emissao <= ?"
-            params.append(str(data_fim))
+            nfe_conditions.append("date(data_emissao) <= ?")
+            nfe_params.append(data_fim)
         
-        cur.execute(query, params)
-        row = cur.fetchone()
-        total_realizado = float(row[0]) if row else 0.0
+        if cliente:
+            nfe_conditions.append("cliente = ?")
+            nfe_params.append(cliente)
         
-        cur.close()
+        if posto:
+            nfe_conditions.append("posto_id = ?")
+            nfe_params.append(posto)
+        
+        nfe_where = " AND ".join(nfe_conditions)
+        
+        # Construir WHERE clause para Postos
+        posto_conditions = []
+        posto_params = []
+        
+        if cliente:
+            posto_conditions.append("nomecli = ?")
+            posto_params.append(cliente)
+        
+        if posto:
+            posto_conditions.append("id = ?")
+            posto_params.append(posto)
+        
+        posto_where = " AND ".join(posto_conditions) if posto_conditions else "1=1"
+        
+        # Calcular totais separadamente para evitar duplicação
+        # Total Realizado: Soma de NFes (todas as NFes, mesmo sem posto_id)
+        query_realizado = f"""
+            SELECT COALESCE(SUM(valor_total), 0)
+            FROM modulo2_nfe
+            WHERE {nfe_where}
+        """
+        
+        cur.execute(query_realizado, nfe_params)
+        total_realizado = float(cur.fetchone()[0] or 0)
+        
+        # Total Orçado: Dobro do valor realizado (conforme solicitado pelo usuário)
+        # Lógica: Se realizamos R$ 600k, o orçado teórico seria R$ 1.200k (2x)
+        total_orcado = total_realizado * 2.0
+        
         conn.close()
         
         return {
@@ -258,6 +290,9 @@ def totais_gerais(
         }
         
     except Exception as e:
+        print(f"[ERRO] Ao calcular totais gerais: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -758,3 +793,86 @@ def listar_arquivos_exportados():
     arquivos.sort(key=lambda x: x["criado_em"], reverse=True)
     
     return {"arquivos": arquivos}
+
+
+# ============================================
+# ENDPOINTS PARA DASHBOARD COM DADOS DO JSON
+# ============================================
+
+@router.get("/dashboard/total-nfes")
+def total_nfes(
+    cliente: Optional[str] = Query(None, description="Filtrar por cliente"),
+    posto: Optional[str] = Query(None, description="Filtrar por posto (requer cliente)")
+):
+    """
+    Retorna estatísticas totais de NFes: total, identificadas, pendentes, valor total, produtos.
+    """
+    try:
+        from .db import obter_total_nfes
+        return obter_total_nfes(cliente_filtro=cliente, posto_filtro=posto)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/dashboard/clientes")
+def listar_clientes():
+    """
+    Lista todos os clientes distintos disponíveis para filtro.
+    """
+    try:
+        from .db import listar_clientes_distintos
+        clientes = listar_clientes_distintos()
+        return {"clientes": clientes}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/dashboard/postos")
+def listar_postos_por_cliente_endpoint(
+    cliente: str = Query(..., description="Cliente para listar postos")
+):
+    """
+    Lista todos os postos de um cliente específico.
+    """
+    try:
+        from .db import listar_postos_por_cliente
+        postos = listar_postos_por_cliente(cliente)
+        return {"postos": postos}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/dashboard/grafico-clientes")
+def grafico_clientes(
+    cliente_filtro: Optional[str] = Query(None, description="Filtrar por cliente específico")
+):
+    """
+    Retorna dados agregados por cliente para o gráfico de clientes.
+    """
+    try:
+        from .db import listar_gastos_por_cliente_agregado
+        dados = listar_gastos_por_cliente_agregado(cliente_filtro=cliente_filtro)
+        return dados
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/dashboard/grafico-produtos")
+def grafico_produtos(
+    cliente: Optional[str] = Query(None, description="Filtrar por cliente"),
+    posto: Optional[str] = Query(None, description="Filtrar por posto (requer cliente)"),
+    limit: int = Query(50, description="Limite de produtos")
+):
+    """
+    Retorna produtos agregados para o gráfico de produtos.
+    """
+    try:
+        from .db import listar_produtos_agregados
+        produtos = listar_produtos_agregados(
+            cliente_filtro=cliente,
+            posto_filtro=posto,
+            limit=limit
+        )
+        return produtos
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

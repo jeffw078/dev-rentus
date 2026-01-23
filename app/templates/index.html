@@ -162,7 +162,7 @@
       <!-- MÓDULO 2 – Suprimentos  -->
       <button
   data-name="Suprimentos"
-  onclick="window.location.href='/modulo2';"
+  onclick="window.location.href='/suprimentos';"
   class="module-card bg-slate-800 border border-slate-700 rounded-2xl shadow hover:shadow-lg
          transition-all px-5 py-6 text-left flex flex-col justify-between hover:bg-slate-700/50"
 >
@@ -171,6 +171,62 @@
   <br>
   <span class="text-sm text-slate-400 mt-2">Suprimentos</span>
 </button>
+
+<!-- ÁREA EXCLUSIVA - Renderização condicional no servidor (sigilo absoluto) -->
+{% set perfil_principal_lower = user.get('perfil_principal', '').lower() if user else '' %}
+{% set perfis_lower = user.get('perfis', []) | map('lower') | list if user else [] %}
+{% if user and (perfil_principal_lower == 'auditor' or 'auditor' in perfis_lower) %}
+<button
+  data-name="Recursos Avançados"
+  onclick="window.location.href='/premium';"
+  class="module-card bg-slate-800 border border-slate-700 rounded-2xl shadow hover:shadow-lg
+         transition-all px-5 py-6 text-left flex flex-col justify-between hover:bg-slate-700/50"
+>
+  <span class="text-sm text-yellow-400 font-medium mb-1">Auditores!</span>
+  <span class="text-lg font-semibold">Área exclusiva para auditores</span>
+  <br>
+  <span class="text-sm text-slate-400 mt-2">Conteúdo Privado</span>
+</button>
+{% endif %}
+
+
+
+<!-- ÁREA EXCLUSIVA - Renderização condicional no servidor (sigilo absoluto) -->
+{% set perfil_principal_lower = user.get('perfil_principal', '').lower() if user else '' %}
+{% set perfis_lower = user.get('perfis', []) | map('lower') | list if user else [] %}
+{% if user and (perfil_principal_lower == 'direcao' or 'direcao' in perfis_lower) %}
+<button
+  data-name="Recursos Avançados"
+  onclick="window.location.href='/premium';"
+  class="module-card bg-slate-800 border border-slate-700 rounded-2xl shadow hover:shadow-lg
+         transition-all px-5 py-6 text-left flex flex-col justify-between hover:bg-slate-700/50"
+>
+  <span class="text-sm text-yellow-400 font-medium mb-1">Direção!</span>
+  <span class="text-lg font-semibold">Área exclusiva para diretores!</span>
+  <br>
+  <span class="text-sm text-slate-400 mt-2">Conteúdo Privado</span>
+</button>
+{% endif %}
+
+
+
+
+<!-- ÁREA EXCLUSIVA - Renderização condicional no servidor (sigilo absoluto) -->
+{% set perfil_principal_lower = user.get('perfil_principal', '').lower() if user else '' %}
+{% set perfis_lower = user.get('perfis', []) | map('lower') | list if user else [] %}
+{% if user and (perfil_principal_lower == 'loyal' or 'loyal' in perfis_lower) %}
+<button
+  data-name="Recursos Avançados"
+  onclick="window.location.href='/premium';"
+  class="module-card bg-slate-800 border border-slate-700 rounded-2xl shadow hover:shadow-lg
+         transition-all px-5 py-6 text-left flex flex-col justify-between hover:bg-slate-700/50"
+>
+  <span class="text-sm text-yellow-400 font-medium mb-1">Loyal</span>
+  <span class="text-lg font-semibold">Recursos Avançados</span>
+  <br>
+  <span class="text-sm text-slate-400 mt-2">Conteúdo Premium</span>
+</button>
+{% endif %}
 
 
 <!-- MÓDULO 3 – Férias Cheque -->
@@ -355,22 +411,7 @@
   <span class="text-sm text-slate-400 mt-2">Horas suplementares</span>
 </button>
 
-<!-- ÁREA EXCLUSIVA - Renderização condicional no servidor (sigilo absoluto) -->
-{% set perfil_principal_lower = user.get('perfil_principal', '').lower() if user else '' %}
-{% set perfis_lower = user.get('perfis', []) | map('lower') | list if user else [] %}
-{% if user and (perfil_principal_lower == 'loyal' or 'loyal' in perfis_lower) %}
-<button
-  data-name="Recursos Avançados"
-  onclick="window.location.href='/premium';"
-  class="module-card bg-slate-800 border border-slate-700 rounded-2xl shadow hover:shadow-lg
-         transition-all px-5 py-6 text-left flex flex-col justify-between hover:bg-slate-700/50"
->
-  <span class="text-sm text-yellow-400 font-medium mb-1">ACESSO ESPECIAL</span>
-  <span class="text-lg font-semibold">⭐ Recursos Avançados</span>
-  <br>
-  <span class="text-sm text-slate-400 mt-2">Conteúdo Premium</span>
-</button>
-{% endif %}
+
 
     </div>
   </main>

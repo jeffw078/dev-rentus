@@ -105,7 +105,7 @@
 
   <!-- BANNER MODO DEV (oculto por padrão, exibido via JS se DEV_MODE) -->
   <div id="devModeBanner" class="hidden bg-amber-600 text-amber-950 text-center py-2 px-4 font-semibold text-sm">
-    ⚠️ MODO DESENVOLVIMENTO — Dados mockados (sem conexão real com SEFAZ)
+    ⚠️ MODO DESENVOLVIMENTO
   </div>
 
  <!-- HEADER -->
@@ -119,6 +119,23 @@
     </div>
 
     <div class="flex items-center gap-3 flex-wrap">
+      <!-- Filtros de Cliente e Posto -->
+      <div class="flex items-center gap-2 border-r border-slate-600 pr-3">
+        <label class="text-xs text-slate-400">Cliente:</label>
+        <select id="filtroCliente" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm min-w-[200px]">
+          <option value="">Todos os Clientes</option>
+        </select>
+      </div>
+      <div class="flex items-center gap-2 border-r border-slate-600 pr-3">
+        <label class="text-xs text-slate-400">Posto:</label>
+        <select id="filtroPosto" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm min-w-[200px]" disabled>
+          <option value="">Selecione um cliente</option>
+        </select>
+      </div>
+      <button id="btnLimparFiltros" class="px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-white border border-slate-600">
+        Limpar Filtros
+      </button>
+
       <!-- Mensagem de Status (discreta) -->
       <div id="statusMensagem" class="text-xs text-slate-300 px-3 py-1 rounded-full bg-slate-700/50 border border-slate-600/50 hidden">
         <span id="statusTexto"></span>
@@ -156,15 +173,48 @@
   <!-- CONTENT -->
   <main class="flex-1 p-6 md:p-8 space-y-6">
     
+    <!-- Total de NFes -->
+    <section class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5">
+      <div class="mb-3">
+        <div class="text-sm text-slate-400">Resumo Geral</div>
+        <div class="text-lg font-semibold">Total de Notas Fiscais</div>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div class="bg-slate-900/50 rounded-lg p-3">
+          <div class="text-xs text-slate-400">Total de NFes</div>
+          <div class="text-xl font-bold text-white" id="totalNfes">0</div>
+        </div>
+        <div class="bg-slate-900/50 rounded-lg p-3">
+          <div class="text-xs text-slate-400">Identificadas</div>
+          <div class="text-xl font-bold text-emerald-400" id="nfesIdentificadas">0</div>
+        </div>
+        <div class="bg-slate-900/50 rounded-lg p-3">
+          <div class="text-xs text-slate-400">Pendentes</div>
+          <div class="text-xl font-bold text-yellow-400" id="nfesPendentes">0</div>
+        </div>
+        <div class="bg-slate-900/50 rounded-lg p-3">
+          <div class="text-xs text-slate-400">Valor Total</div>
+          <div class="text-xl font-bold text-blue-400" id="valorTotalNfes">R$ 0,00</div>
+        </div>
+        <div class="bg-slate-900/50 rounded-lg p-3">
+          <div class="text-xs text-slate-400">Total Produtos</div>
+          <div class="text-xl font-bold text-purple-400" id="totalProdutos">0</div>
+        </div>
+      </div>
+    </section>
+    
     <!-- Barra de Progresso (Orçado vs Realizado) -->
     <section class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5">
       <div class="mb-3">
         <div class="text-sm text-slate-400">Progresso</div>
-        <div class="text-lg font-semibold" id="progressTitulo">Orçado vs Realizado - Geral</div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <div class="text-lg font-semibold" id="progressTitulo">Orçado vs Realizado - Geral</div>
+          <div class="text-sm text-slate-300">Orçado: <span id="valorOrcado" class="font-bold">R$ 0,00</span></div>
+        </div>
+        <div class="text-xs text-yellow-400 mt-1">⚠️ Valores orçados estão pendentes de validação (atualmente calculados como 50% do realizado)</div>
       </div>
       <div class="space-y-2">
         <div class="flex justify-between text-sm flex-wrap gap-2">
-          <span class="text-slate-300">Orçado: <span id="valorOrcado" class="font-bold">R$ 0,00</span></span>
           <span class="text-slate-300">Realizado: <span id="valorRealizado" class="font-bold">R$ 0,00</span></span>
           <span class="text-slate-300">Status: <span id="valorStatus" class="font-bold">R$ 0,00</span></span>
         </div>
@@ -225,10 +275,40 @@
       </div>
       <div class="overflow-x-auto">
         <div class="chart-wrap" style="min-width: 1200px; height: 400px;">
-          <canvas id="graficoPostos"></canvas>
+          <canvas id="graficoClientes"></canvas>
         </div>
       </div>
     </section>
+
+    <!-- Gráfico de Produtos -->
+    <section class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5">
+      <div class="mb-3">
+        <div class="text-sm text-slate-400">Análise</div>
+        <div class="text-lg font-semibold">Produtos Mais Comprados</div>
+        <div class="text-xs text-slate-400 mt-1">Top produtos por valor total</div>
+      </div>
+      <div class="overflow-x-auto">
+        <div class="chart-wrap" style="min-width: 1200px; height: 400px;">
+          <canvas id="graficoProdutos"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gráfico de Quantidade de Produtos -->
+    <section class="bg-slate-800 border border-slate-700 rounded-2xl shadow p-5">
+      <div class="mb-3">
+        <div class="text-sm text-slate-400">Análise</div>
+        <div class="text-lg font-semibold">Quantidade Comprada por Produto</div>
+        <div class="text-xs text-slate-400 mt-1">Top produtos por quantidade</div>
+      </div>
+      <div class="overflow-x-auto">
+        <div class="chart-wrap" style="min-width: 1200px; height: 400px;">
+          <canvas id="graficoQuantidadeProdutos"></canvas>
+        </div>
+      </div>
+    </section>
+
+   
 
     <!-- Tabela de Pendências -->
     <!-- Ocultar para Direção e Gestor (apenas visualização de resultados) -->
@@ -250,6 +330,7 @@
               <th class="text-left p-2">Fornecedor</th>
               <th class="text-left p-2">Cliente</th>
               <th class="text-left p-2">Posto de Trabalho</th>
+              <th class="text-left p-2">Sugestões de Postos</th>
               <th class="text-center p-2">Ação</th>
             </tr>
           </thead>
@@ -473,11 +554,38 @@ const BRL = new Intl.NumberFormat("pt-BR", { style:"currency", currency:"BRL" })
 
 // Estado global
 let chartPostos = null;
+let chartClientes = null;
+let chartProdutos = null;
+let chartQuantidadeProdutos = null;
 let nfeSelecionada = null;
 let dadosPostos = []; // Dados estáticos por enquanto
+let clienteFiltroSelecionado = null;
+let postoFiltroSelecionado = null;
+
+// Flags para modal
+let clientesCarregados = false;
+let postosCarregados = false;
 
 // Flag para evitar múltiplas inicializações
 let inicializado = false;
+
+// Utilitário para data de hoje no formato ISO
+function todayISO() {
+  const today = new Date();
+  return today.toISOString().split('T')[0];
+}
+
+// Converter data ISO (YYYY-MM-DD) para formato BR (DD/MM/YYYY)
+function isoToBR(isoDate) {
+  const [year, month, day] = isoDate.split('-');
+  return `${day}/${month}/${year}`;
+}
+
+// Converter data BR (DD/MM/YYYY) para ISO (YYYY-MM-DD)
+function brToISO(brDate) {
+  const [day, month, year] = brDate.split('/');
+  return `${year}-${month}-${day}`;
+}
 
 // Verificar modo DEV
 async function verificarModoDesenvolvimento() {
@@ -505,13 +613,58 @@ document.addEventListener("DOMContentLoaded", () => {
   verificarModoDesenvolvimento();
   
   try {
+    // Definir valores padrão de data em formato BR
+    const filtroDataIni = document.getElementById("filtroDataIni");
+    const filtroDataFim = document.getElementById("filtroDataFim");
+    if (filtroDataIni) filtroDataIni.value = '01/01/2026';
+    if (filtroDataFim) filtroDataFim.value = '15/01/2026';
+    
     // Carregar dados iniciais (com delay para garantir que DOM está pronto)
     setTimeout(() => {
       // Carregar dados iniciais sem filtro de data
+      carregarTotalNfes().catch(err => console.error("Erro ao carregar total NFes:", err));
+      carregarClientesParaFiltro().catch(err => console.error("Erro ao carregar clientes:", err));
       carregarPendencias().catch(err => console.error("Erro ao carregar pendências:", err));
+      carregarGraficoClientes().catch(err => console.error("Erro ao carregar gráfico clientes:", err));
+      carregarGraficoProdutos().catch(err => console.error("Erro ao carregar gráfico produtos:", err));
+      carregarGraficoQuantidadeProdutos().catch(err => console.error("Erro ao carregar gráfico quantidade produtos:", err));
       carregarPostosParaGrafico().catch(err => console.error("Erro ao carregar postos:", err));
       // Não carregar clientes/postos aqui, apenas quando necessário (no modal)
     }, 100);
+    
+    // Event listeners para filtros de cliente e posto
+    document.getElementById("filtroCliente").addEventListener("change", async (e) => {
+      const cliente = e.target.value;
+      clienteFiltroSelecionado = cliente || null;
+      
+      // Carregar postos do cliente selecionado
+      if (cliente) {
+        await carregarPostosParaFiltro(cliente);
+        document.getElementById("filtroPosto").disabled = false;
+      } else {
+        document.getElementById("filtroPosto").innerHTML = '<option value="">Selecione um cliente</option>';
+        document.getElementById("filtroPosto").disabled = true;
+        postoFiltroSelecionado = null;
+      }
+      
+      // Atualizar gráficos e dados
+      await atualizarDadosComFiltros();
+    });
+    
+    document.getElementById("filtroPosto").addEventListener("change", async (e) => {
+      postoFiltroSelecionado = e.target.value || null;
+      await atualizarDadosComFiltros();
+    });
+    
+    // Event listener para botão limpar filtros
+    document.getElementById("btnLimparFiltros").addEventListener("click", async () => {
+      document.getElementById("filtroCliente").value = "";
+      document.getElementById("filtroPosto").innerHTML = '<option value="">Selecione um cliente</option>';
+      document.getElementById("filtroPosto").disabled = true;
+      clienteFiltroSelecionado = null;
+      postoFiltroSelecionado = null;
+      await atualizarDadosComFiltros();
+    });
     
     // Event listeners para filtros de data
     document.getElementById("btnAplicarFiltro").addEventListener("click", aplicarFiltroData);
@@ -711,34 +864,9 @@ async function confirmarImportacao() {
 }
 
 // ===================== IMPORTAÇÃO INICIAL (DIA 0) =====================
-document.getElementById("btnImportacaoInicial").addEventListener("click", async () => {
-  const btn = document.getElementById("btnImportacaoInicial");
-  btn.disabled = true;
-  btn.textContent = "Carregando preview...";
-
-  try {
-    // Fazer preview primeiro
-    const previewResponse = await fetch("/api/modulo2/sefaz/preview-inicial");
-    if (!previewResponse.ok) {
-      throw new Error(`HTTP ${previewResponse.status}`);
-    }
-    const previewData = await previewResponse.json();
-    
-    if (previewData.status === "error") {
-      mostrarStatusMensagem(previewData.mensagem || "Erro ao fazer preview", "error");
-      return;
-    }
-    
-    // Mostrar modal de preview
-    mostrarModalPreviewInicial(previewData);
-    
-  } catch (error) {
-    console.error("Erro ao fazer preview da importação inicial:", error);
-    mostrarStatusMensagem("Erro ao carregar preview. Verifique o console.", "error");
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "Importação Inicial";
-  }
+document.getElementById("btnImportacaoInicial").addEventListener("click", () => {
+  // Mostrar popup informando que é apenas para produção
+  alert("⚠️ IMPORTAÇÃO INICIAL\n\nEste botão irá fazer a importação inicial quando o sistema for colocado em produção.\n\nAtualmente, os dados são importados do arquivo JSON (produtos_com_posto.json).");
 });
 
 // Função para mostrar modal de preview da importação inicial
@@ -974,6 +1102,406 @@ async function carregarStatusScheduler() {
   }
 }
 
+// ===================== CARREGAR TOTAL DE NFES =====================
+async function carregarTotalNfes() {
+  try {
+    let url = "/api/modulo2/dashboard/total-nfes";
+    if (clienteFiltroSelecionado) {
+      url += `?cliente=${encodeURIComponent(clienteFiltroSelecionado)}`;
+      if (postoFiltroSelecionado) {
+        url += `&posto=${encodeURIComponent(postoFiltroSelecionado)}`;
+      }
+    }
+    
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    const data = await response.json();
+    
+    console.log("[TOTAL NFES] Dados recebidos:", data);
+    
+    document.getElementById("totalNfes").textContent = data.total_nfes || 0;
+    document.getElementById("nfesIdentificadas").textContent = data.nfes_identificadas || 0;
+    document.getElementById("nfesPendentes").textContent = data.nfes_pendentes || 0;
+    // Usar total_realizado para manter consistência com Orçado vs Realizado
+    document.getElementById("valorTotalNfes").textContent = BRL.format(data.total_realizado || 0);
+    document.getElementById("totalProdutos").textContent = data.total_produtos || 0;
+  } catch (error) {
+    console.error("Erro ao carregar total de NFes:", error);
+    // Mostrar zeros em caso de erro
+    document.getElementById("totalNfes").textContent = "0";
+    document.getElementById("nfesIdentificadas").textContent = "0";
+    document.getElementById("nfesPendentes").textContent = "0";
+    document.getElementById("valorTotalNfes").textContent = "R$ 0,00";
+    document.getElementById("totalProdutos").textContent = "0";
+  }
+}
+
+// ===================== CARREGAR CLIENTES PARA FILTRO =====================
+async function carregarClientesParaFiltro() {
+  try {
+    const response = await fetch("/api/modulo2/dashboard/clientes");
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    const data = await response.json();
+    const select = document.getElementById("filtroCliente");
+    
+    // Manter opção "Todos os Clientes"
+    const todosOption = select.querySelector('option[value=""]');
+    select.innerHTML = "";
+    if (todosOption) select.appendChild(todosOption);
+    
+    // Adicionar clientes
+    if (data.clientes && Array.isArray(data.clientes)) {
+      data.clientes.forEach(cliente => {
+        const option = document.createElement("option");
+        option.value = cliente;
+        option.textContent = cliente;
+        select.appendChild(option);
+      });
+    }
+  } catch (error) {
+    console.error("Erro ao carregar clientes:", error);
+  }
+}
+
+// ===================== CARREGAR POSTOS PARA FILTRO =====================
+async function carregarPostosParaFiltro(cliente) {
+  try {
+    const response = await fetch(`/api/modulo2/dashboard/postos?cliente=${encodeURIComponent(cliente)}`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    const data = await response.json();
+    const select = document.getElementById("filtroPosto");
+    
+    select.innerHTML = '<option value="">Todos os Postos</option>';
+    
+    if (data.postos && Array.isArray(data.postos)) {
+      data.postos.forEach(posto => {
+        const option = document.createElement("option");
+        option.value = posto.nomepos || posto.nomepos;
+        option.textContent = `${posto.nomepos || ""} (${posto.codigo || ""})`;
+        option.setAttribute("data-posto-id", posto.id);
+        select.appendChild(option);
+      });
+    }
+  } catch (error) {
+    console.error("Erro ao carregar postos:", error);
+  }
+}
+
+// ===================== ATUALIZAR DADOS COM FILTROS =====================
+async function atualizarDadosComFiltros() {
+  await Promise.all([
+    carregarTotalNfes(),
+    carregarGraficoClientes(),
+    carregarGraficoProdutos(),
+    carregarGraficoQuantidadeProdutos(),
+    carregarPendencias()
+  ]);
+}
+
+// ===================== CARREGAR GRÁFICO DE CLIENTES =====================
+async function carregarGraficoClientes() {
+  try {
+    let url = "/api/modulo2/dashboard/grafico-clientes";
+    if (clienteFiltroSelecionado) {
+      url += `?cliente_filtro=${encodeURIComponent(clienteFiltroSelecionado)}`;
+    }
+    
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    const dados = await response.json();
+    renderGraficoClientes(dados);
+  } catch (error) {
+    console.error("Erro ao carregar gráfico de clientes:", error);
+    renderGraficoClientes([]);
+  }
+}
+
+// ===================== CARREGAR GRÁFICO DE PRODUTOS =====================
+async function carregarGraficoProdutos() {
+  try {
+    let url = "/api/modulo2/dashboard/grafico-produtos?limit=20";
+    if (clienteFiltroSelecionado) {
+      url += `&cliente=${encodeURIComponent(clienteFiltroSelecionado)}`;
+      if (postoFiltroSelecionado) {
+        url += `&posto=${encodeURIComponent(postoFiltroSelecionado)}`;
+      }
+    }
+    
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    const dados = await response.json();
+    renderGraficoProdutos(dados);
+  } catch (error) {
+    console.error("Erro ao carregar gráfico de produtos:", error);
+    renderGraficoProdutos([]);
+  }
+}
+
+// ===================== CARREGAR GRÁFICO DE QUANTIDADE DE PRODUTOS =====================
+async function carregarGraficoQuantidadeProdutos() {
+  try {
+    let url = "/api/modulo2/dashboard/grafico-produtos?limit=20";
+    if (clienteFiltroSelecionado) {
+      url += `&cliente=${encodeURIComponent(clienteFiltroSelecionado)}`;
+      if (postoFiltroSelecionado) {
+        url += `&posto=${encodeURIComponent(postoFiltroSelecionado)}`;
+      }
+    }
+    
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    const dados = await response.json();
+    renderGraficoQuantidadeProdutos(dados);
+  } catch (error) {
+    console.error("Erro ao carregar gráfico de quantidade produtos:", error);
+    renderGraficoQuantidadeProdutos([]);
+  }
+}
+
+// ===================== RENDERIZAR GRÁFICO DE CLIENTES =====================
+function renderGraficoClientes(dados) {
+  const ctx = document.getElementById("graficoClientes");
+  
+  if (chartClientes) {
+    chartClientes.destroy();
+  }
+  
+  if (!dados || dados.length === 0) {
+    return;
+  }
+  
+  // Filtrar clientes com gastos zerados
+  const dadosComGastos = dados.filter(d => (d.realizado || 0) > 0 || (d.orcado || 0) > 0);
+  const dadosOrdenados = [...dadosComGastos].sort((a, b) => (b.realizado || 0) - (a.realizado || 0));
+  
+  chartClientes = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: dadosOrdenados.map(d => d.nomecli || d.nome || "Cliente"),
+      datasets: [
+        {
+          label: "Orçado (R$)",
+          data: dadosOrdenados.map(d => d.orcado || 0),
+          backgroundColor: "rgba(59, 130, 246, 0.6)",
+          borderColor: "rgba(59, 130, 246, 1)",
+          borderWidth: 1
+        },
+        {
+          label: "Realizado (R$)",
+          data: dadosOrdenados.map(d => d.realizado || 0),
+          backgroundColor: "rgba(16, 185, 129, 0.6)",
+          borderColor: "rgba(16, 185, 129, 1)",
+          borderWidth: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { 
+          display: true,
+          position: 'top',
+          labels: { color: '#cbd5e1', font: { size: 12 } }
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => {
+              return `${context.dataset.label}: ${BRL.format(context.parsed.y)}`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: (value) => BRL.format(value),
+            color: '#cbd5e1'
+          },
+          grid: { color: 'rgba(148, 163, 184, 0.1)' }
+        },
+        x: {
+          ticks: {
+            maxRotation: 90,
+            minRotation: 90,
+            font: { size: 10 },
+            color: '#cbd5e1'
+          },
+          grid: { display: false }
+        }
+      },
+      onClick: (event, elements) => {
+        if (elements && elements.length > 0) {
+          const idx = elements[0].index;
+          const cliente = dadosOrdenados[idx];
+          clienteFiltroSelecionado = cliente.nomecli || cliente.nome;
+          document.getElementById("filtroCliente").value = clienteFiltroSelecionado;
+          atualizarDadosComFiltros();
+        }
+      }
+    }
+  });
+}
+
+// ===================== RENDERIZAR GRÁFICO DE QUANTIDADE DE PRODUTOS =====================
+function renderGraficoQuantidadeProdutos(dados) {
+  const ctx = document.getElementById("graficoQuantidadeProdutos");
+  
+  if (chartQuantidadeProdutos) {
+    chartQuantidadeProdutos.destroy();
+  }
+  
+  if (!dados || dados.length === 0) {
+    return;
+  }
+  
+  const dadosOrdenados = [...dados].sort((a, b) => (b.quantidade_total || 0) - (a.quantidade_total || 0));
+  
+  chartQuantidadeProdutos = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: dadosOrdenados.map(d => {
+        const nome = d.produto || "";
+        return nome.length > 50 ? nome.substring(0, 50) + "..." : nome;
+      }),
+      datasets: [
+        {
+          label: "Quantidade Total",
+          data: dadosOrdenados.map(d => d.quantidade_total || 0),
+          backgroundColor: "rgba(34, 197, 94, 0.6)",
+          borderColor: "rgba(34, 197, 94, 1)",
+          borderWidth: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { 
+          display: true,
+          position: 'top',
+          labels: { color: '#cbd5e1', font: { size: 12 } }
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => {
+              const produto = dadosOrdenados[context.dataIndex];
+              return [
+                `Quantidade: ${context.parsed.y.toFixed(2)}`,
+                `Valor Total: ${BRL.format(produto.valor_total || 0)}`,
+                `NFes: ${produto.total_nfes || 0}`
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: (value) => value.toFixed(0),
+            color: '#cbd5e1'
+          },
+          grid: { color: 'rgba(148, 163, 184, 0.1)' }
+        },
+        x: {
+          ticks: {
+            maxRotation: 90,
+            minRotation: 90,
+            font: { size: 9 },
+            color: '#cbd5e1'
+          },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+}
+
+// ===================== RENDERIZAR GRÁFICO DE PRODUTOS =====================
+function renderGraficoProdutos(dados) {
+  const ctx = document.getElementById("graficoProdutos");
+  
+  if (chartProdutos) {
+    chartProdutos.destroy();
+  }
+  
+  if (!dados || dados.length === 0) {
+    return;
+  }
+  
+  const dadosOrdenados = [...dados].sort((a, b) => (b.valor_total || 0) - (a.valor_total || 0));
+  
+  chartProdutos = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: dadosOrdenados.map(d => {
+        const nome = d.produto || "";
+        return nome.length > 50 ? nome.substring(0, 50) + "..." : nome;
+      }),
+      datasets: [
+        {
+          label: "Valor Total (R$)",
+          data: dadosOrdenados.map(d => d.valor_total || 0),
+          backgroundColor: "rgba(139, 92, 246, 0.6)",
+          borderColor: "rgba(139, 92, 246, 1)",
+          borderWidth: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { 
+          display: true,
+          position: 'top',
+          labels: { color: '#cbd5e1', font: { size: 12 } }
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => {
+              const produto = dadosOrdenados[context.dataIndex];
+              return [
+                `Valor Total: ${BRL.format(context.parsed.y)}`,
+                `Quantidade: ${produto.quantidade_total || 0}`,
+                `NFes: ${produto.total_nfes || 0}`
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: (value) => BRL.format(value),
+            color: '#cbd5e1'
+          },
+          grid: { color: 'rgba(148, 163, 184, 0.1)' }
+        },
+        x: {
+          ticks: {
+            maxRotation: 90,
+            minRotation: 90,
+            font: { size: 9 },
+            color: '#cbd5e1'
+          },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+}
+
 // ===================== CARREGAR PENDÊNCIAS =====================
 async function carregarPendencias(dataIni = null, dataFim = null) {
   try {
@@ -999,7 +1527,7 @@ async function carregarPendencias(dataIni = null, dataFim = null) {
     if (pendencias.length === 0) {
       tb.innerHTML = `
         <tr>
-          <td colspan="6" class="p-4 text-center text-slate-400">
+          <td colspan="7" class="p-4 text-center text-slate-400">
             Nenhuma pendência encontrada
           </td>
         </tr>
@@ -1019,12 +1547,21 @@ async function carregarPendencias(dataIni = null, dataFim = null) {
       // Usar data attribute para passar dados de forma segura
       row.setAttribute("data-pendencia", JSON.stringify(p));
       
+      // Extrair sugestões do motivo (se houver)
+      const motivo = p.motivo || "";
+      const sugestoes = motivo.includes("Sugestões") || motivo.includes("OPÇÕES") 
+        ? motivo.split(/Sugestões:|OPÇÕES:/)[1]?.trim() || ""
+        : "";
+      
       row.innerHTML = `
         <td class="p-2 font-mono text-xs">${chave}</td>
         <td class="p-2">${BRL.format(p.valor || 0)}</td>
         <td class="p-2">${fornecedor}</td>
         <td class="p-2">${cliente}</td>
         <td class="p-2">${p.posto_trabalho ? p.posto_trabalho.replace(/</g, "&lt;").replace(/>/g, "&gt;") : "<span class='text-amber-400'>Não identificado</span>"}</td>
+        <td class="p-2 text-xs text-slate-400 max-w-xs">
+          ${sugestoes ? `<div class="whitespace-pre-wrap">${sugestoes.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>` : "<span class='text-slate-500'>Sem sugestões</span>"}
+        </td>
         <td class="p-2 text-center">
           <button data-pendencia-id="${p.id || index}" 
                   class="btn-identificar px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs">
@@ -1038,15 +1575,21 @@ async function carregarPendencias(dataIni = null, dataFim = null) {
     // Adicionar event listeners aos botões após criar as linhas
     document.querySelectorAll(".btn-identificar").forEach(btn => {
       btn.addEventListener("click", function() {
+        console.log("[MODAL DEBUG] Botão clicado!");
         const row = this.closest("tr");
         const dataStr = row.getAttribute("data-pendencia");
+        console.log("[MODAL DEBUG] Data string:", dataStr);
         if (dataStr) {
           try {
             const pendencia = JSON.parse(dataStr);
+            console.log("[MODAL DEBUG] Pendencia parseada:", pendencia);
+            console.log("[MODAL DEBUG] Chamando abrirModalIdentificar...");
             abrirModalIdentificar(pendencia);
           } catch (e) {
             console.error("Erro ao parsear dados da pendência:", e);
           }
+        } else {
+          console.error("[MODAL DEBUG] Nenhum data-pendencia encontrado!");
         }
       });
     });
@@ -1111,7 +1654,7 @@ async function carregarPostosParaGrafico(dataIni = null, dataFim = null, cliente
       } else if (cliente && dadosPostos.length > 0) {
         // Cliente filtrado mas pode ter múltiplos resultados
         // Se houver dados, atualizar progresso geral com os dados filtrados
-        atualizarProgressoGeral(dadosPostos);
+        atualizarProgressoGeral(dadosPostos).catch(err => console.error("Erro ao atualizar progresso:", err));
         const clienteInfoEl = document.getElementById("clienteSelecionadoInfo");
         const clienteNomeEl = document.getElementById("clienteSelecionadoNome");
         if (clienteInfoEl && clienteNomeEl) {
@@ -1120,7 +1663,7 @@ async function carregarPostosParaGrafico(dataIni = null, dataFim = null, cliente
         }
       } else if (cliente && dadosPostos.length === 0) {
         // Cliente filtrado mas sem dados - mostrar zeros
-        atualizarProgressoGeral([]);
+        atualizarProgressoGeral([]).catch(err => console.error("Erro ao atualizar progresso:", err));
         const clienteInfoEl = document.getElementById("clienteSelecionadoInfo");
         const clienteNomeEl = document.getElementById("clienteSelecionadoNome");
         if (clienteInfoEl && clienteNomeEl) {
@@ -1140,20 +1683,57 @@ async function carregarPostosParaGrafico(dataIni = null, dataFim = null, cliente
 }
 
 // ===================== ATUALIZAR PROGRESSO GERAL =====================
-function atualizarProgressoGeral(dados) {
-  const totalOrcado = dados.reduce((sum, d) => sum + (d.orcado || 0), 0);
-  const totalRealizado = dados.reduce((sum, d) => sum + (d.realizado || 0), 0);
-  const totalStatus = totalOrcado - totalRealizado;
+async function atualizarProgressoGeral(dados) {
+  // SEMPRE buscar totais reais da API (apenas dados do JSON)
+  try {
+    let url = `/api/modulo2/totais-gerais?data_ini=2026-01-01&data_fim=${todayISO()}`;
+    
+    // Adicionar filtros se estiverem ativos
+    if (clienteFiltroSelecionado) {
+      url += `&cliente=${encodeURIComponent(clienteFiltroSelecionado)}`;
+    }
+    if (postoFiltroSelecionado) {
+      url += `&posto=${encodeURIComponent(postoFiltroSelecionado)}`;
+    }
+    
+    const response = await fetch(url);
+    if (response.ok) {
+      const totais = await response.json();
+      const totalOrcado = totais.total_orcado || 0;
+      const totalRealizado = totais.total_realizado || 0;
+      const totalStatus = totalOrcado - totalRealizado;
+      
+      document.getElementById("progressTitulo").textContent = "Orçado vs Realizado - Geral";
+      document.getElementById("valorOrcado").textContent = BRL.format(totalOrcado);
+      document.getElementById("valorRealizado").textContent = BRL.format(totalRealizado);
+      document.getElementById("valorStatus").textContent = BRL.format(totalStatus);
+      
+      const percentual = totalOrcado > 0 ? (totalRealizado / totalOrcado) * 100 : 0;
+      const progressBar = document.getElementById("progressBar");
+      progressBar.style.width = `${Math.min(percentual, 100)}%`;
+      progressBar.textContent = `${percentual.toFixed(1)}%`;
+      
+      console.log(`[PROGRESS] Orçado: ${totalOrcado}, Realizado: ${totalRealizado}, %: ${percentual.toFixed(1)}%`);
+      return;
+    }
+  } catch (error) {
+    console.error("Erro ao carregar totais da API:", error);
+  }
   
+  console.warn("[PROGRESS] Falha ao carregar da API, usando zeros");
+  // Se API falhar, mostrar zeros
   document.getElementById("progressTitulo").textContent = "Orçado vs Realizado - Geral";
-  document.getElementById("valorOrcado").textContent = BRL.format(totalOrcado);
-  document.getElementById("valorRealizado").textContent = BRL.format(totalRealizado);
-  document.getElementById("valorStatus").textContent = BRL.format(totalStatus);
+  document.getElementById("valorOrcado").textContent = BRL.format(0);
+  document.getElementById("valorRealizado").textContent = BRL.format(0);
+  document.getElementById("valorStatus").textContent = BRL.format(0);
   
-  const percentual = totalOrcado > 0 ? (totalRealizado / totalOrcado) * 100 : 0;
   const progressBar = document.getElementById("progressBar");
-  progressBar.style.width = `${Math.min(percentual, 100)}%`;
-  progressBar.textContent = `${percentual.toFixed(1)}%`;
+  const progressBarText = document.getElementById("progressBarText");
+  
+  progressBar.style.width = "0%";
+  if (progressBarText) {
+    progressBarText.textContent = "0%";
+  }
 }
 
 // ===================== RENDERIZAR GRÁFICO =====================
@@ -1344,6 +1924,8 @@ function atualizarProgressoPorPosto(cliente) {
 
 // ===================== MODAL IDENTIFICAR =====================
 async function abrirModalIdentificar(nfe) {
+  console.log("[MODAL] abrirModalIdentificar chamada com:", nfe);
+  
   if (!nfe || !nfe.id) {
     console.error("NFe inválida para identificar:", nfe);
     alert("Erro: Dados da NFe inválidos");
@@ -1353,6 +1935,7 @@ async function abrirModalIdentificar(nfe) {
   nfeSelecionada = nfe;
   
   try {
+    console.log("[MODAL] Preenchendo campos do modal...");
     document.getElementById("modalChave").textContent = nfe.chave_nfe || "";
     document.getElementById("modalValor").textContent = BRL.format(nfe.valor || 0);
     document.getElementById("modalFornecedor").textContent = nfe.fornecedor || "—";
@@ -1362,9 +1945,16 @@ async function abrirModalIdentificar(nfe) {
     // Carregar clientes e postos nos selects (forçar recarregamento)
     clientesCarregados = false;
     postosCarregados = false;
+    console.log("[MODAL] Carregando clientes e postos...");
     await carregarClientesEPostos();
     
-    document.getElementById("modalIdentificar").classList.add("active");
+    // Mostrar modal com classe correta
+    const modal = document.getElementById("modalIdentificar");
+    console.log("[MODAL] Modal encontrado:", modal);
+    console.log("[MODAL] Classes antes:", modal.classList.toString());
+    modal.classList.add("active");
+    console.log("[MODAL] Classes depois:", modal.classList.toString());
+    console.log("[MODAL] Modal aberto!");
   } catch (error) {
     console.error("Erro ao abrir modal:", error);
     alert("Erro ao abrir modal de identificação");
@@ -1375,9 +1965,6 @@ function fecharModal() {
   document.getElementById("modalIdentificar").classList.remove("active");
   nfeSelecionada = null;
 }
-
-let clientesCarregados = false;
-let postosCarregados = false;
 
 async function carregarClientesEPostos() {
   // Evitar carregamento duplicado
@@ -1449,17 +2036,110 @@ async function carregarClientesEPostos() {
   }
 }
 
+// Abrir modal de identificação
+async function abrirModalIdentificacao(pendenciaId, chave, fornecedor) {
+  console.log("[MODAL] Abrindo modal para pendência:", pendenciaId);
+  
+  nfeSelecionada = { id: pendenciaId, chave, fornecedor };
+  
+  const modal = document.getElementById("modalIdentificar");
+  const selectCliente = document.getElementById("selectCliente");
+  const selectPosto = document.getElementById("selectPosto");
+  
+  if (!modal || !selectCliente || !selectPosto) {
+    console.error("[MODAL] Elementos não encontrados");
+    alert("Erro: Elementos do modal não encontrados");
+    return;
+  }
+  
+  // Mostrar modal
+  modal.classList.add("active");
+  
+  // Carregar lista de clientes
+  try {
+    const response = await fetch("/api/modulo2/clientes");
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const clientes = await response.json();
+    
+    selectCliente.innerHTML = '<option value="">Selecione o cliente...</option>';
+    clientes.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c.nome;
+      opt.textContent = c.nome;
+      selectCliente.appendChild(opt);
+    });
+    
+    // Resetar posto
+    selectPosto.innerHTML = '<option value="">Selecione um cliente primeiro...</option>';
+    selectPosto.disabled = true;
+    
+    // Event listener para carregar postos ao selecionar cliente
+    selectCliente.onchange = async () => {
+      const clienteSelecionado = selectCliente.value;
+      if (!clienteSelecionado) {
+        selectPosto.innerHTML = '<option value="">Selecione um cliente primeiro...</option>';
+        selectPosto.disabled = true;
+        return;
+      }
+      
+      try {
+        const resp = await fetch(`/api/modulo2/postos?cliente=${encodeURIComponent(clienteSelecionado)}`);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        
+        const postos = await resp.json();
+        selectPosto.innerHTML = '<option value="">Selecione o posto...</option>';
+        postos.forEach(p => {
+          const opt = document.createElement("option");
+          opt.value = p.id;
+          opt.textContent = `${p.nome} (${p.codigo})`;
+          selectPosto.appendChild(opt);
+        });
+        selectPosto.disabled = false;
+      } catch (err) {
+        console.error("[MODAL] Erro ao carregar postos:", err);
+        selectPosto.innerHTML = '<option value="">Erro ao carregar postos</option>';
+      }
+    };
+    
+  } catch (error) {
+    console.error("[MODAL] Erro ao carregar clientes:", error);
+    alert("Erro ao carregar clientes. Verifique o console.");
+  }
+}
+
+function fecharModal() {
+  const modal = document.getElementById("modalIdentificar");
+  if (modal) {
+    modal.classList.remove("active");
+  }
+  nfeSelecionada = null;
+}
+
 async function salvarIdentificacao() {
   if (!nfeSelecionada || !nfeSelecionada.id) {
     alert("Erro: NFe não selecionada corretamente");
     return;
   }
   
-  const clienteId = document.getElementById("selectCliente").value;
-  const postoId = document.getElementById("selectPosto").value;
+  const selectCliente = document.getElementById("selectCliente");
+  const selectPosto = document.getElementById("selectPosto");
+  const clienteId = selectCliente.value;
+  const postoId = selectPosto.value;
   
   if (!clienteId || !postoId) {
     alert("Por favor, selecione cliente e posto de trabalho");
+    return;
+  }
+  
+  // Obter o nome do cliente selecionado
+  const clienteNome = selectCliente.options[selectCliente.selectedIndex].textContent;
+  const postoIdInt = parseInt(postoId);
+  
+  if (isNaN(postoIdInt)) {
+    alert("Erro: ID do posto inválido");
     return;
   }
   
@@ -1468,8 +2148,8 @@ async function salvarIdentificacao() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        cliente_id: clienteId,
-        posto_id: parseInt(postoId)
+        cliente_id: clienteNome,  // Enviar nome do cliente, não ID
+        posto_id: postoIdInt
       })
     });
     
